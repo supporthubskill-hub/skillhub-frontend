@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillHub Admin</title>
+  <style>
+    :root{--primary:#4f46e5;--success:#16a34a;--danger:#dc2626;--bg:#f8fafc;--card:#fff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0}
+    *{box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}body{margin:0;background:var(--bg);color:var(--text)}
+    header{background:var(--card);border-bottom:1px solid var(--border);padding:14px 18px;position:sticky;top:0;z-index:5}.bar{max-width:1100px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:10px}.logo{font-weight:800;color:var(--primary);font-size:1.35rem}.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;background:var(--primary);color:#fff}.btn.secondary{background:#64748b}.btn.success{background:var(--success)}.btn.danger{background:var(--danger)}
+    main{max-width:1100px;margin:22px auto;padding:0 14px}.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.stat{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}.stat strong{display:block;font-size:1.35rem;margin-top:4px}.muted{color:var(--muted);font-size:.9rem}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.list{display:flex;flex-direction:column;gap:10px}.item{border:1px solid var(--border);border-radius:10px;padding:12px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:0 0 auto}.grow{flex:1 1 220px}input,select{padding:9px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text)}#status{min-height:22px;margin:8px 0;color:var(--danger)}@media(max-width:760px){.grid{grid-template-columns:1fr}.bar{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+<header><div class="bar"><div class="logo">SkillHub 🚀 · Admin</div><div class="row"><button class="btn secondary" onclick="location.href='/'">Volver a SkillHub</button><button class="btn" onclick="refreshAll()">Actualizar</button></div></div></header>
+<main>
+  <div class="card"><h2>Panel Administrativo</h2><p class="muted">Datos reales del backend. Las comisiones mostradas siguen siendo valores de prueba mientras los pagos reales estén desactivados.</p><div id="status"></div><div id="stats" class="stats"></div></div>
+  <div class="grid">
+    <section class="card"><h3>Verificaciones pendientes</h3><div id="verifications" class="list"></div></section>
+    <section class="card"><h3>Reportes y disputas</h3><div id="cases" class="list"></div></section>
+  </div>
+  <section class="card"><h3>Usuarios</h3><div class="row" style="margin-bottom:12px"><input class="grow" id="userSearch" placeholder="Buscar por nombre o correo"><button class="btn" onclick="loadUsers()">Buscar</button></div><div id="users" class="list"></div></section>
+</main>
+<script>
+const API_URL='https://skillhub-backend-b5iy.onrender.com';
+const session=JSON.parse(sessionStorage.getItem('skillhubSession')||'null');
+if(!session?.token||session?.user?.role!=='admin'){location.replace('/');}
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(path,method='GET',body){const r=await fetch(API_URL+path,{method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.token},body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'No se pudo completar la solicitud');return j}
+function showError(e){document.getElementById('status').textContent=e?.message||String(e)}
+async function loadStats(){const s=await api('/api/admin/stats');document.getElementById('stats').innerHTML=[['Usuarios',s.users],['Vendedores activos',s.sellers],['Servicios',s.services],['Reservas',s.bookings],['Reportes abiertos',s.openReports],['Disputas abiertas',s.openDisputes],['Comisiones de prueba','$'+Number(s.testCommissions||0).toFixed(2)]].map(x=>`<div class="stat"><span class="muted">${esc(x[0])}</span><strong>${esc(x[1])}</strong></div>`).join('')}
+async function loadVerifications(){const rows=await api('/api/admin/verifications');document.getElementById('verifications').innerHTML=rows.length?rows.map(u=>`<div class="item"><strong>${esc(u.name)}</strong><div class="muted">${esc(u.email)}</div><div class="row" style="margin-top:8px"><button class="btn success" onclick="verification(${u.id},'verified')">Aprobar</button><button class="btn danger" onclick="verification(${u.id},'rejected')">Rechazar</button></div></div>`).join(''):'<div class="muted">No hay verificaciones pendientes.</div>'}
+async function verification(id,status){await api('/api/admin/verifications/'+id,'PATCH',{status});await loadVerifications()}
+async function loadCases(){const d=await api('/api/admin/cases');const rows=[...(d.reports||[]),...(d.disputes||[])].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));document.getElementById('cases').innerHTML=rows.length?rows.map(c=>`<div class="item"><strong>${c.type==='report'?'Reporte':'Disputa'} #${c.id}</strong><div>${esc(c.reason)}</div><div class="muted">${esc(c.openedByName||'')} · ${esc(c.status)}</div><div class="row" style="margin-top:8px"><select onchange="caseStatus('${c.type}',${c.id},this.value)"><option value="">Cambiar estado</option><option value="reviewing">Revisando</option><option value="resolved">Resuelto</option><option value="dismissed">Descartado</option></select></div></div>`).join(''):'<div class="muted">No hay casos.</div>'}
+async function caseStatus(type,id,status){if(!status)return;await api('/api/admin/'+(type==='report'?'reports':'disputes')+'/'+id,'PATCH',{status});await loadCases();await loadStats()}
+async function loadUsers(){const q=encodeURIComponent(document.getElementById('userSearch').value.trim());const rows=await api('/api/admin/users?q='+q);document.getElementById('users').innerHTML=rows.map(u=>`<div class="item"><div class="row"><div class="grow"><strong>${esc(u.name)}</strong><div class="muted">${esc(u.email)} · ${esc(u.role)} · ${esc(u.identityStatus)} · ${u.serviceCount||0} servicios</div></div>${u.role==='user'?`<button class="btn ${u.accountStatus==='active'?'danger':'success'}" onclick="userStatus(${u.id},'${u.accountStatus==='active'?'suspended':'active'}')">${u.accountStatus==='active'?'Suspender':'Reactivar'}</button>`:''}</div></div>`).join('')||'<div class="muted">No se encontraron usuarios.</div>'}
+async function userStatus(id,status){if(status==='suspended'&&!confirm('¿Suspender esta cuenta?'))return;await api('/api/admin/users/'+id+'/status','PATCH',{status});await loadUsers();await loadStats()}
+async function refreshAll(){document.getElementById('status').textContent='';try{await Promise.all([loadStats(),loadVerifications(),loadCases(),loadUsers()])}catch(e){showError(e)}}
+refreshAll();
+</script>
+</body>
+</html>
