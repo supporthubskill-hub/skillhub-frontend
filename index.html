@@ -90,6 +90,25 @@
         .dialog-actions .btn { flex: 1; }
         .form-error { color: var(--danger); min-height: 1.25rem; margin-top: 8px; font-size: 0.85rem; }
 
+        @media (max-width: 700px) {
+            body { padding-bottom: 82px; }
+            header { padding: 10px 12px; }
+            .logo { font-size: 1.2rem; }
+            .header-actions { gap: 5px; }
+            .icon-btn { min-height: 44px; padding: 8px 10px; }
+            .tab-content { margin: 12px auto; padding: 0 10px; }
+            .card { padding: 15px; border-radius: 10px; }
+            .grid { grid-template-columns: 1fr; }
+            input, select, textarea, .btn { min-height: 44px; font-size: 1rem; }
+            .bottom-nav { justify-content: flex-start; gap: 2px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+            .nav-item { flex: 0 0 72px; min-height: 54px; font-size: 0.75rem; }
+            dialog { width: 100vw; max-width: none; margin: auto 0 0; border-radius: 18px 18px 0 0; max-height: 92vh; overflow:auto; }
+            .dialog-body { padding: 20px 16px max(20px, env(safe-area-inset-bottom)); }
+            .dialog-actions { flex-direction: column-reverse; }
+            .service-actions { flex-direction: column; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+
         /* Review Stars */
         .rating { color: #f59e0b; font-weight: bold; }
     </style>
@@ -113,13 +132,19 @@
         <div class="card">
             <h3>🔍 Buscar Servicios</h3>
             <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                <input type="text" id="searchInput" placeholder="Barra de búsqueda..." onkeyup="filterServices()">
+                <input type="search" id="searchInput" placeholder="¿Qué servicio necesitas?" oninput="filterServices()">
+                <input type="search" id="areaFilter" placeholder="Ciudad o área general" oninput="filterServices()">
                 <div style="display: flex; gap: 8px;">
                     <select id="categoryFilter" onchange="filterServices()">
                         <option value="">Todas las Categorías</option>
                         <option value="Desarrollo">Desarrollo Web & Software</option>
                         <option value="Hogar">Reparación y Limpieza</option>
                         <option value="Educación">Clases y Tutorías</option>
+                    </select>
+                    <select id="typeFilter" onchange="filterServices()">
+                        <option value="">Remoto o presencial</option>
+                        <option value="Remoto">Remoto</option>
+                        <option value="Presencial">Presencial</option>
                     </select>
                     <select id="sortFilter" onchange="filterServices()">
                         <option value="default">Ordenar por</option>
@@ -442,7 +467,7 @@
         <button class="nav-item" onclick="switchTab('tab-dashboard', this)">
             <span>📊</span>Panel
         </button>
-        <button class="nav-item" onclick="switchTab('tab-admin', this)">
+        <button id="adminNav" class="nav-item" onclick="switchTab('tab-admin', this)" hidden>
             <span>⚙️</span>Admin
         </button>
         <button class="nav-item" onclick="switchTab('tab-support', this)">
@@ -481,6 +506,7 @@
 
         function updateAuthButton() {
             document.getElementById('authButton').textContent = session ? `👤 ${session.user.name}` : '👤 Ingresar';
+            document.getElementById('adminNav').hidden = !session || session.user.role !== 'admin';
         }
 
         function openAuth() {
@@ -644,11 +670,15 @@
         function filterServices() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             const cat = document.getElementById('categoryFilter').value;
+            const area = document.getElementById('areaFilter').value.toLowerCase().trim();
+            const type = document.getElementById('typeFilter').value;
             const sort = document.getElementById('sortFilter').value;
 
             let result = servicesData.filter(s => 
-                (s.name.toLowerCase().includes(query) || s.desc.toLowerCase().includes(query)) &&
-                (cat === "" || s.cat === cat)
+                (String(s.name || '').toLowerCase().includes(query) || String(s.desc || '').toLowerCase().includes(query)) &&
+                (cat === "" || s.cat === cat) &&
+                (!area || String(s.area || '').toLowerCase().includes(area)) &&
+                (!type || String(s.type || 'Remoto') === type)
             );
 
             if (sort === "price-asc") result.sort((a, b) => a.price - b.price);
