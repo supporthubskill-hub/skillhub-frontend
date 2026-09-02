@@ -1,0 +1,39 @@
+name: Add admin service moderation UI
+on:
+  push:
+    branches: [chatgpt/admin-service-moderation]
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/admin-service-moderation
+      - name: Update admin UI
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('admin.html')
+          t=p.read_text()
+          old='''  <section class="card"><h3>Usuarios</h3><div class="row" style="margin-bottom:12px"><input class="grow" id="userSearch" placeholder="Buscar por nombre o correo"><button class="btn" onclick="loadUsers()">Buscar</button></div><div id="users" class="list"></div></section>'''
+          new='''  <section class="card"><h3>Servicios publicados</h3><p class="muted">Puedes retirar del marketplace un servicio publicado por cualquier cuenta. Las reservas existentes se conservan para mantener el historial.</p><div class="row" style="margin-bottom:12px"><input class="grow" id="serviceSearch" placeholder="Buscar servicio, vendedor o correo"><button class="btn" onclick="loadServices()">Buscar</button></div><div id="services" class="list"></div></section>\n  <section class="card"><h3>Usuarios</h3><div class="row" style="margin-bottom:12px"><input class="grow" id="userSearch" placeholder="Buscar por nombre o correo"><button class="btn" onclick="loadUsers()">Buscar</button></div><div id="users" class="list"></div></section>'''
+          if old not in t: raise SystemExit('users block not found')
+          t=t.replace(old,new)
+          anchor="async function loadUsers(){"
+          funcs="""async function loadServices(){const q=encodeURIComponent(document.getElementById('serviceSearch').value.trim());const rows=await api('/api/admin/services?q='+q);document.getElementById('services').innerHTML=rows.length?rows.map(s=>`<div class=\"item\"><div class=\"row\"><div class=\"grow\"><strong>${esc(s.name)}</strong><div class=\"muted\">${esc(s.providerName)} · ${esc(s.providerEmail)} · ${esc(s.category||'')} · ${s.bookingCount||0} reservas · ${s.active?'Activo':'Retirado'}</div></div>${s.active?`<button class=\"btn danger\" onclick=\"removeService(${s.id})\">Eliminar servicio</button>`:''}</div></div>`).join(''):'<div class=\"muted\">No se encontraron servicios.</div>'}\nasync function removeService(id){if(!confirm('¿Eliminar este servicio del marketplace? Las reservas existentes se conservarán.'))return;await api('/api/admin/services/'+id,'DELETE');await Promise.all([loadServices(),loadStats(),loadUsers()])}\n"""
+          if 'async function loadServices()' not in t:
+              if anchor not in t: raise SystemExit('loadUsers anchor not found')
+              t=t.replace(anchor,funcs+anchor)
+          t=t.replace("Promise.all([loadStats(),loadVerifications(),loadCases(),loadUsers()])","Promise.all([loadStats(),loadVerifications(),loadCases(),loadServices(),loadUsers()])")
+          p.write_text(t)
+          PY
+      - name: Commit
+        run: |
+          rm .github/workflows/admin-service-moderation.yml
+          git config user.name "SkillHub Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Add admin service deletion controls"
+          git push origin HEAD:chatgpt/admin-service-moderation
