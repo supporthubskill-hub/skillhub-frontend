@@ -427,7 +427,7 @@
                         </div>
                         <div>
                             <div class="price">${price.toFixed(2)} USD <span style="font-size:0.75rem; color:gray;">(${hourly.toFixed(2)}/hr)</span></div>
-                            <button class="btn btn-success" onclick="bookService('${cleanName}')">Reservar / Solicitar</button>
+                            <button class="btn btn-success" onclick="bookService(${Number(s.id)})">Reservar / Solicitar</button>
                         </div>
                     </div>
                 `;
@@ -516,12 +516,12 @@
             window.location.href = `mailto:support.hubskill@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent("De: " + email + "\n\n" + msg)}`;
         }
 
-        async function bookService(title) {
+        async function bookService(serviceId) {
             if (!session || session.user.role !== 'client') {
                 alert('Inicia sesión como cliente para reservar.');
                 return;
             }
-            const service = servicesData.find((item) => item.name === title);
+            const service = servicesData.find((item) => Number(item.id) === Number(serviceId));
             const date = prompt('Fecha y hora (ejemplo: 2026-09-15T10:00):');
             if (!service || !date) return;
             try {
