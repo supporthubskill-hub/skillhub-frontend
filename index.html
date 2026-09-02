@@ -256,20 +256,15 @@
     <!-- 6. RESEÑAS -->
     <section id="tab-reviews" class="tab-content">
         <div class="card">
-            <h3>⭐ Reseñas y Calificaciones</h3>
-            <div class="form-group" style="margin-top:10px;">
-                <label>Calificar Servicio</label>
-                <select id="reviewRating">
-                    <option>5 Estrellas ⭐⭐⭐⭐⭐</option>
-                    <option>4 Estrellas ⭐⭐⭐⭐</option>
-                    <option>3 Estrellas ⭐⭐⭐</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Comentario</label>
-                <textarea id="reviewText" rows="2" placeholder="Escribe tus opiniones sobre el proveedor..."></textarea>
-            </div>
-            <button class="btn" onclick="alert('¡Gracias! Tu reseña ha sido publicada.')">Publicar Calificación</button>
+            <h3>⭐ Publicar una reseña verificada</h3>
+            <p class="service-meta">Solo aparecen reservaciones completadas.</p>
+            <form onsubmit="submitReview(event)" style="margin-top:12px;">
+                <div class="form-group"><label for="reviewBooking">Reservación</label><select id="reviewBooking" required></select></div>
+                <div class="form-group"><label for="reviewRating">Calificación</label><select id="reviewRating"><option value="5">5 estrellas</option><option value="4">4 estrellas</option><option value="3">3 estrellas</option><option value="2">2 estrellas</option><option value="1">1 estrella</option></select></div>
+                <div class="form-group"><label for="reviewText">Comentario</label><textarea id="reviewText" rows="3" minlength="3" maxlength="1000" required></textarea></div>
+                <button class="btn" type="submit">Publicar reseña</button>
+                <p id="reviewStatus" class="form-error" role="status"></p>
+            </form>
         </div>
     </section>
 
@@ -379,9 +374,33 @@
             <p id="accountEmail" style="margin-top:6px;"></p>
             <p id="accountRole" style="margin-top:6px;"></p>
             <div class="dialog-actions">
+                <button class="btn btn-secondary" type="button" onclick="openProfileEditor()">Editar perfil</button>
                 <button class="btn btn-secondary" type="button" onclick="document.getElementById('accountDialog').close()">Volver</button>
                 <button class="btn btn-danger" type="button" onclick="logout()">Cerrar sesión</button>
             </div>
+        </div>
+    </dialog>
+
+    <dialog id="profileEditDialog">
+        <form class="dialog-body" onsubmit="saveProfile(event)">
+            <h3>✏️ Editar perfil</h3>
+            <div class="form-group"><label>Título profesional</label><input id="profileHeadline" maxlength="100"></div>
+            <div class="form-group"><label>Biografía</label><textarea id="profileBio" rows="3" maxlength="600"></textarea></div>
+            <div class="form-group"><label>Habilidades</label><input id="profileSkills" maxlength="300" placeholder="Ej: JavaScript, reparación, limpieza"></div>
+            <div class="form-group"><label>Experiencia</label><textarea id="profileExperience" rows="2" maxlength="600"></textarea></div>
+            <div class="form-group"><label>Idiomas</label><input id="profileLanguages" maxlength="200"></div>
+            <div class="form-group"><label>Ciudad o área general</label><input id="profileLocation" maxlength="100"></div>
+            <div class="form-group"><label>Enlace de portafolio</label><input id="profilePortfolio" type="url" maxlength="500"></div>
+            <div class="form-group"><label>URL de avatar (https)</label><input id="profileAvatar" type="url" maxlength="500"></div>
+            <label><input id="profileRemote" type="checkbox" style="width:auto" checked> Disponible para trabajo remoto</label>
+            <p id="profileStatus" class="form-error" role="status"></p>
+            <div class="dialog-actions"><button class="btn btn-secondary" type="button" onclick="document.getElementById('profileEditDialog').close()">Cancelar</button><button class="btn" type="submit">Guardar perfil</button></div>
+        </form>
+    </dialog>
+    <dialog id="providerProfileDialog">
+        <div class="dialog-body">
+            <button class="icon-btn" style="float:right" onclick="document.getElementById('providerProfileDialog').close()">✕</button>
+            <div id="providerProfileContent"></div>
         </div>
     </dialog>
 
@@ -538,7 +557,7 @@
                         </div>
                         <div>
                             <div class="price">${price.toFixed(2)} USD <span style="font-size:0.75rem; color:gray;">(${hourly.toFixed(2)}/hr)</span></div>
-                            <div class="service-meta">Por ${escapeHtml(s.providerName || 'Proveedor de SkillHub')}</div>
+                            <button class="conversation-item" style="padding:6px 0;border:0;" onclick="openProviderProfile(${Number(s.providerId)})">Por ${escapeHtml(s.providerName || 'Proveedor de SkillHub')} · Ver perfil</button>
                             <div class="service-actions">
                                 <button class="btn btn-secondary" onclick="openServiceDialog(${Number(s.id)})">Ver detalles</button>
                                 <button class="btn btn-success" onclick="openServiceDialog(${Number(s.id)}, true)">Reservar</button>
@@ -560,6 +579,7 @@
             document.getElementById(tabId).classList.add('active');
             if (tabId === 'tab-chat') loadConversations();
             if (tabId === 'tab-bookings') loadCalendar();
+            if (tabId === 'tab-reviews') loadReviewOptions();
             if(btn) btn.classList.add('active');
         }
 
@@ -805,7 +825,7 @@
                 const slots = await slotsResponse.json();
                 const rows = await bookingsResponse.json();
                 list.innerHTML = slots.length ? slots.map((slot) => `<div class="card" style="padding:12px;margin-top:8px;"><strong>${escapeHtml(slot.serviceName)}</strong><p class="service-meta">${new Date(slot.startsAt).toLocaleString()} · ${slot.durationMinutes} min · ${slot.available ? 'Disponible' : 'Reservado'}</p>${slot.available ? `<button class="btn btn-danger" style="margin-top:8px" onclick="deleteAvailability(${slot.id})">Eliminar horario</button>` : ''}</div>`).join('') : '<div class="chat-empty">No has añadido horarios.</div>';
-                bookings.innerHTML = rows.length ? rows.map((item) => `<div class="card" style="padding:12px;"><strong>${escapeHtml(item.serviceName)}</strong><p class="service-meta">${new Date(item.date).toLocaleString()} · ${escapeHtml(item.status)} · ${item.perspective === 'provider' ? 'Te contrataron' : 'Tu reservación'}</p></div>`).join('') : '<div class="chat-empty">Aún no tienes reservaciones.</div>';
+                bookings.innerHTML = rows.length ? rows.map((item) => `<div class="card" style="padding:12px;"><strong>${escapeHtml(item.serviceName)}</strong><p class="service-meta">${new Date(item.date).toLocaleString()} · ${escapeHtml(item.status)} · ${item.perspective === 'provider' ? 'Te contrataron' : 'Tu reservación'}</p>${item.perspective==='provider'&&item.status!=='completed'&&item.status!=='cancelled'?`<button class="btn btn-success" style="margin-top:8px" onclick="updateBookingStatus(${item.id},'completed')">Marcar completado</button>`:''}${item.perspective==='client'&&item.status==='completed'?`<button class="btn" style="margin-top:8px" onclick="switchTab('tab-reviews')">Dejar reseña</button>`:''}</div>`).join('') : '<div class="chat-empty">Aún no tienes reservaciones.</div>';
             } catch (error) {
                 document.getElementById('availabilityStatus').textContent = error.message;
             }
@@ -833,6 +853,48 @@
         async function deleteAvailability(id) {
             const response = await fetch(`${API_URL}/api/availability/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${session.token}` } });
             if (response.ok) loadCalendar();
+        }
+
+        async function openProfileEditor() {
+            document.getElementById('accountDialog').close();
+            try {
+                const response = await fetch(`${API_URL}/api/providers/${session.user.id}`);
+                const data = await response.json();
+                const p = data.profile || {};
+                profileHeadline.value=p.headline||''; profileBio.value=p.bio||''; profileSkills.value=p.skills||'';
+                profileExperience.value=p.experience||''; profileLanguages.value=p.languages||''; profileLocation.value=p.location||'';
+                profilePortfolio.value=p.portfolioUrl||''; profileAvatar.value=p.avatarUrl||''; profileRemote.checked=p.remoteAvailable!==false;
+                document.getElementById('profileEditDialog').showModal();
+            } catch { document.getElementById('profileEditDialog').showModal(); }
+        }
+        async function saveProfile(event) {
+            event.preventDefault();
+            const payload={headline:profileHeadline.value,bio:profileBio.value,skills:profileSkills.value,experience:profileExperience.value,languages:profileLanguages.value,location:profileLocation.value,portfolioUrl:profilePortfolio.value,avatarUrl:profileAvatar.value,remoteAvailable:profileRemote.checked};
+            const response=await fetch(`${API_URL}/api/profile`,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.token}`},body:JSON.stringify(payload)});
+            const data=await response.json(); if(!response.ok){profileStatus.textContent=data.error||'No se pudo guardar';return;}
+            document.getElementById('profileEditDialog').close();
+        }
+        async function openProviderProfile(id) {
+            const response=await fetch(`${API_URL}/api/providers/${id}`); const data=await response.json();
+            if(!response.ok) return;
+            const p=data.profile; const avatar=p.avatarUrl?`<img src="${escapeHtml(p.avatarUrl)}" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover">`:'👤';
+            providerProfileContent.innerHTML=`<div style="font-size:2rem">${avatar}</div><h2>${escapeHtml(p.name)}</h2><strong>${escapeHtml(p.headline||'Profesional de SkillHub')}</strong><p class="service-meta">⭐ ${p.rating||0} · ${p.reviewCount||0} reseñas · ${escapeHtml(p.location||'Ubicación no indicada')} ${p.remoteAvailable?'· Remoto':''}</p><p style="margin-top:12px">${escapeHtml(p.bio||'Sin biografía todavía.')}</p><p style="margin-top:12px"><strong>Habilidades:</strong> ${escapeHtml(p.skills||'No indicadas')}</p><p><strong>Experiencia:</strong> ${escapeHtml(p.experience||'No indicada')}</p><p><strong>Idiomas:</strong> ${escapeHtml(p.languages||'No indicados')}</p>${p.portfolioUrl?`<p style="margin-top:10px"><a href="${escapeHtml(p.portfolioUrl)}" target="_blank" rel="noopener">Ver portafolio</a></p>`:''}<h3 style="margin-top:18px">Reseñas</h3>${data.reviews.length?data.reviews.map(r=>`<div class="card"><strong>⭐ ${r.rating} · ${escapeHtml(r.reviewerName)}</strong><p>${escapeHtml(r.comment)}</p></div>`).join(''):'<p class="service-meta">Aún no tiene reseñas.</p>'}`;
+            document.getElementById('providerProfileDialog').showModal();
+        }
+        async function loadReviewOptions() {
+            const select=document.getElementById('reviewBooking'); select.innerHTML='<option value="">Selecciona una reservación</option>';
+            if(!session)return;
+            const response=await fetch(`${API_URL}/api/bookings/me`,{headers:{'Authorization':`Bearer ${session.token}`}});
+            const rows=await response.json(); rows.filter(b=>b.status==='completed'&&b.perspective==='client').forEach(b=>select.add(new Option(b.serviceName,b.id)));
+        }
+        async function submitReview(event) {
+            event.preventDefault(); const status=document.getElementById('reviewStatus');
+            const response=await fetch(`${API_URL}/api/reviews`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.token}`},body:JSON.stringify({bookingId:Number(reviewBooking.value),rating:Number(reviewRating.value),comment:reviewText.value})});
+            const data=await response.json(); status.textContent=response.ok?'Reseña publicada.':(data.error||'No se pudo publicar'); if(response.ok)event.target.reset();
+        }
+        async function updateBookingStatus(id,status) {
+            const response=await fetch(`${API_URL}/api/bookings/${id}/status`,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.token}`},body:JSON.stringify({status})});
+            if(response.ok)loadCalendar();
         }
 
         function toggleDarkMode() {
