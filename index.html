@@ -470,10 +470,7 @@
         let selectedBookingId = null;
         const offensiveWords = ["palabramala1", "estafa", "fraude", "groseria1"];
 
-        let servicesData = [
-            { id: 1, name: "Desarrollo de Software Fullstack", desc: "Creación de plataformas web a medida.", cat: "Desarrollo", price: 80, hourly: 25, rating: 5.0, area: "Remoto" },
-            { id: 2, name: "Reparación y Mantenimiento de Equipos", desc: "Diagnóstico y formateo de laptops/PC.", cat: "Hogar", price: 35, hourly: 15, rating: 4.8, area: "Presencial / Local" }
-        ];
+        let servicesData = [];
 
         function filterOffensiveContent(text) {
             let filteredText = text;
@@ -559,16 +556,22 @@
         }
 
         async function fetchServicesFromAPI() {
+            const grid = document.getElementById('servicesGrid');
+            grid.innerHTML = '<div class="chat-empty">Cargando servicios…</div>';
             try {
                 const res = await fetch(`${API_URL}/api/services`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if(data.length > 0) servicesData = data;
+                const data = await res.json().catch(() => []);
+                if (!res.ok) throw new Error('No se pudieron cargar los servicios');
+                servicesData = Array.isArray(data) ? data : [];
+                renderServices(servicesData);
+                if (!servicesData.length) {
+                    grid.innerHTML = '<div class="chat-empty">Todavía no hay servicios publicados.</div>';
                 }
             } catch (err) {
-                console.log("Servidor backend usando datos locales de respaldo.");
+                servicesData = [];
+                grid.innerHTML = '<div class="chat-empty">No se pudieron cargar los servicios. Intenta nuevamente en unos minutos.</div>';
+                console.error(err);
             }
-            renderServices(servicesData);
         }
 
         function renderServices(items) {
