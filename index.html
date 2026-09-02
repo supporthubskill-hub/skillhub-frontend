@@ -246,10 +246,11 @@
         </div>
 
         <div class="card">
-            <h3>🆔 Verificación y Seguridad</h3>
-            <p style="font-size:0.85rem; margin-bottom:8px;"><strong>Estado de Identidad:</strong> Verificado ✅</p>
-            <p style="font-size:0.85rem; margin-bottom:8px;"><strong>Teléfono / Email:</strong> Confirmados ✅</p>
-            <button class="btn btn-danger" style="font-size:0.8rem;" onclick="alert('Reporte enviado al equipo de seguridad.')">Reportar Usuario o Servicio</button>
+            <h3>🛡️ Centro de Seguridad</h3>
+            <div id="verificationStatus" class="stats-grid" style="margin-top:12px;"></div>
+            <button id="verifyButton" class="btn" style="margin-top:12px;" onclick="requestVerification()">Solicitar verificación</button>
+            <h4 style="margin-top:18px;">Mis reportes y disputas</h4>
+            <div id="caseHistory" style="margin-top:8px;"></div>
         </div>
     </section>
 
@@ -362,6 +363,7 @@
             <p id="serviceDialogStatus" class="form-error" role="status"></p>
             <div class="dialog-actions">
                 <button class="btn btn-secondary" type="button" onclick="contactSeller()">💬 Contactar</button>
+                <button class="btn btn-danger" type="button" onclick="openReportDialog()">⚑ Reportar</button>
                 <button class="btn btn-success" type="button" onclick="bookService()">📅 Reservar</button>
             </div>
         </div>
@@ -404,6 +406,25 @@
         </div>
     </dialog>
 
+    <dialog id="reportDialog">
+        <form class="dialog-body" onsubmit="submitReport(event)">
+            <h3>⚑ Reportar servicio</h3>
+            <div class="form-group"><label>Motivo</label><select id="reportReason"><option>Información engañosa</option><option>Contenido inapropiado</option><option>Posible fraude</option><option>Otro</option></select></div>
+            <div class="form-group"><label>Detalles</label><textarea id="reportDetails" minlength="10" maxlength="1500" required></textarea></div>
+            <p id="reportStatus" class="form-error"></p>
+            <div class="dialog-actions"><button class="btn btn-secondary" type="button" onclick="reportDialog.close()">Cancelar</button><button class="btn btn-danger" type="submit">Enviar reporte</button></div>
+        </form>
+    </dialog>
+    <dialog id="disputeDialog">
+        <form class="dialog-body" onsubmit="submitDispute(event)">
+            <h3>⚖️ Abrir disputa</h3>
+            <div class="form-group"><label>Motivo</label><input id="disputeReason" minlength="3" maxlength="100" required></div>
+            <div class="form-group"><label>Explica lo sucedido</label><textarea id="disputeDetails" minlength="10" maxlength="1500" required></textarea></div>
+            <p id="disputeStatus" class="form-error"></p>
+            <div class="dialog-actions"><button class="btn btn-secondary" type="button" onclick="disputeDialog.close()">Cancelar</button><button class="btn btn-danger" type="submit">Enviar disputa</button></div>
+        </form>
+    </dialog>
+
     <!-- Bottom Navigation Bar -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('tab-search', this)">
@@ -435,6 +456,7 @@
         let session = JSON.parse(sessionStorage.getItem('skillhubSession') || 'null');
         let selectedServiceId = null;
         let activeConversation = null;
+        let selectedBookingId = null;
         const offensiveWords = ["palabramala1", "estafa", "fraude", "groseria1"];
 
         let servicesData = [
@@ -580,6 +602,7 @@
             if (tabId === 'tab-chat') loadConversations();
             if (tabId === 'tab-bookings') loadCalendar();
             if (tabId === 'tab-reviews') loadReviewOptions();
+            if (tabId === 'tab-dashboard') loadSecurityCenter();
             if(btn) btn.classList.add('active');
         }
 
@@ -825,7 +848,7 @@
                 const slots = await slotsResponse.json();
                 const rows = await bookingsResponse.json();
                 list.innerHTML = slots.length ? slots.map((slot) => `<div class="card" style="padding:12px;margin-top:8px;"><strong>${escapeHtml(slot.serviceName)}</strong><p class="service-meta">${new Date(slot.startsAt).toLocaleString()} · ${slot.durationMinutes} min · ${slot.available ? 'Disponible' : 'Reservado'}</p>${slot.available ? `<button class="btn btn-danger" style="margin-top:8px" onclick="deleteAvailability(${slot.id})">Eliminar horario</button>` : ''}</div>`).join('') : '<div class="chat-empty">No has añadido horarios.</div>';
-                bookings.innerHTML = rows.length ? rows.map((item) => `<div class="card" style="padding:12px;"><strong>${escapeHtml(item.serviceName)}</strong><p class="service-meta">${new Date(item.date).toLocaleString()} · ${escapeHtml(item.status)} · ${item.perspective === 'provider' ? 'Te contrataron' : 'Tu reservación'}</p>${item.perspective==='provider'&&item.status!=='completed'&&item.status!=='cancelled'?`<button class="btn btn-success" style="margin-top:8px" onclick="updateBookingStatus(${item.id},'completed')">Marcar completado</button>`:''}${item.perspective==='client'&&item.status==='completed'?`<button class="btn" style="margin-top:8px" onclick="switchTab('tab-reviews')">Dejar reseña</button>`:''}</div>`).join('') : '<div class="chat-empty">Aún no tienes reservaciones.</div>';
+                bookings.innerHTML = rows.length ? rows.map((item) => `<div class="card" style="padding:12px;"><strong>${escapeHtml(item.serviceName)}</strong><p class="service-meta">${new Date(item.date).toLocaleString()} · ${escapeHtml(item.status)} · ${item.perspective === 'provider' ? 'Te contrataron' : 'Tu reservación'}</p><button class="btn btn-danger" style="margin-top:8px" onclick="openDisputeDialog(${item.id})">Abrir disputa</button>${item.perspective==='provider'&&item.status!=='completed'&&item.status!=='cancelled'?`<button class="btn btn-success" style="margin-top:8px" onclick="updateBookingStatus(${item.id},'completed')">Marcar completado</button>`:''}${item.perspective==='client'&&item.status==='completed'?`<button class="btn" style="margin-top:8px" onclick="switchTab('tab-reviews')">Dejar reseña</button>`:''}</div>`).join('') : '<div class="chat-empty">Aún no tienes reservaciones.</div>';
             } catch (error) {
                 document.getElementById('availabilityStatus').textContent = error.message;
             }
@@ -895,6 +918,39 @@
         async function updateBookingStatus(id,status) {
             const response=await fetch(`${API_URL}/api/bookings/${id}/status`,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.token}`},body:JSON.stringify({status})});
             if(response.ok)loadCalendar();
+        }
+
+        async function loadSecurityCenter() {
+            const statusBox=document.getElementById('verificationStatus'),history=document.getElementById('caseHistory');
+            if(!session){statusBox.innerHTML='<p>Inicia sesión para ver tu seguridad.</p>';return;}
+            const headers={'Authorization':`Bearer ${session.token}`};
+            try{
+                const [sr,cr]=await Promise.all([fetch(`${API_URL}/api/security/me`,{headers}),fetch(`${API_URL}/api/cases/me`,{headers})]);
+                const sec=await sr.json(),cases=await cr.json();
+                const labels={unverified:'No verificada',pending:'Pendiente',verified:'Verificada',rejected:'Revisión rechazada'};
+                statusBox.innerHTML=`<div class="stat-box"><p>Correo</p><strong>${sec.emailVerified?'Verificado':'No verificado'}</strong></div><div class="stat-box"><p>Teléfono</p><strong>${sec.phoneVerified?'Verificado':'No verificado'}</strong></div><div class="stat-box"><p>Identidad</p><strong>${labels[sec.identityStatus]||'No verificada'}</strong></div>`;
+                verifyButton.disabled=['pending','verified'].includes(sec.identityStatus);
+                const all=[...(cases.reports||[]).map(x=>({...x,type:'Reporte'})),...(cases.disputes||[]).map(x=>({...x,type:'Disputa'}))];
+                history.innerHTML=all.length?all.map(x=>`<div class="card" style="padding:10px"><strong>${x.type} #${x.id}</strong><p class="service-meta">${escapeHtml(x.reason)} · ${escapeHtml(x.status)}</p></div>`).join(''):'<p class="service-meta">No tienes casos abiertos.</p>';
+            }catch{history.textContent='No se pudo cargar el centro de seguridad.';}
+        }
+        async function requestVerification(){
+            const response=await fetch(`${API_URL}/api/verification/request`,{method:'POST',headers:{'Authorization':`Bearer ${session.token}`}});
+            if(response.ok)loadSecurityCenter();
+        }
+        function openReportDialog(){
+            if(!session){serviceDialogStatus.textContent='Inicia sesión para reportar.';return;}
+            document.getElementById('serviceDialog').close(); reportStatus.textContent=''; reportDialog.showModal();
+        }
+        async function submitReport(event){
+            event.preventDefault(); const service=servicesData.find(x=>Number(x.id)===selectedServiceId);
+            const response=await fetch(`${API_URL}/api/reports`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.token}`},body:JSON.stringify({serviceId:selectedServiceId,targetUserId:service?.providerId,reason:reportReason.value,details:reportDetails.value})});
+            const data=await response.json(); reportStatus.textContent=response.ok?'Reporte enviado.':(data.error||'No se pudo enviar'); if(response.ok)setTimeout(()=>reportDialog.close(),800);
+        }
+        function openDisputeDialog(id){selectedBookingId=id;disputeStatus.textContent='';disputeDialog.showModal();}
+        async function submitDispute(event){
+            event.preventDefault(); const response=await fetch(`${API_URL}/api/disputes`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.token}`},body:JSON.stringify({bookingId:selectedBookingId,reason:disputeReason.value,details:disputeDetails.value})});
+            const data=await response.json(); disputeStatus.textContent=response.ok?'Disputa enviada.':(data.error||'No se pudo enviar'); if(response.ok)setTimeout(()=>disputeDialog.close(),800);
         }
 
         function toggleDarkMode() {
