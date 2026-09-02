@@ -334,6 +334,19 @@
         </form>
     </dialog>
 
+    <dialog id="accountDialog">
+        <div class="dialog-body">
+            <h3>👤 Mi cuenta</h3>
+            <p id="accountName" style="margin-top:14px; font-weight:700;"></p>
+            <p id="accountEmail" style="margin-top:6px;"></p>
+            <p id="accountRole" style="margin-top:6px;"></p>
+            <div class="dialog-actions">
+                <button class="btn btn-secondary" type="button" onclick="document.getElementById('accountDialog').close()">Volver</button>
+                <button class="btn btn-danger" type="button" onclick="logout()">Cerrar sesión</button>
+            </div>
+        </div>
+    </dialog>
+
     <!-- Bottom Navigation Bar -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('tab-search', this)">
@@ -391,15 +404,23 @@
 
         function openAuth() {
             if (session) {
-                session = null;
-                sessionStorage.removeItem('skillhubSession');
-                updateAuthButton();
+                document.getElementById('accountName').textContent = session.user.name;
+                document.getElementById('accountEmail').textContent = session.user.email;
+                document.getElementById('accountRole').textContent = session.user.role === 'provider' ? 'Cuenta de proveedor' : session.user.role === 'admin' ? 'Cuenta administrativa' : 'Cuenta de cliente';
+                document.getElementById('accountDialog').showModal();
                 return;
             }
             document.getElementById('authForm').reset();
             document.getElementById('authError').textContent = '';
             toggleRegisterFields();
             document.getElementById('authDialog').showModal();
+        }
+
+        function logout() {
+            session = null;
+            sessionStorage.removeItem('skillhubSession');
+            document.getElementById('accountDialog').close();
+            updateAuthButton();
         }
 
         function toggleRegisterFields() {
