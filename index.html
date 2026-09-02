@@ -51,6 +51,11 @@
 
         /* Grid System */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .service-actions { display:flex; gap:8px; margin-top:12px; }
+        .service-actions .btn { flex:1; }
+        .service-meta { color:#64748b; font-size:0.82rem; margin-top:6px; }
+        .dialog-price { color:var(--success); font-size:1.3rem; font-weight:800; margin:12px 0; }
+
         .service-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
         .price { font-size: 1.2rem; font-weight: 700; color: var(--success); margin: 8px 0; }
 
@@ -333,6 +338,29 @@
         </form>
     </dialog>
 
+    <dialog id="serviceDialog">
+        <div class="dialog-body">
+            <button class="icon-btn" type="button" style="float:right" onclick="document.getElementById('serviceDialog').close()" aria-label="Cerrar">✕</button>
+            <h3 id="dialogServiceName">Servicio</h3>
+            <p id="dialogProvider" class="service-meta"></p>
+            <p id="dialogDescription" style="margin-top:12px; line-height:1.5;"></p>
+            <p id="dialogPrice" class="dialog-price"></p>
+            <div class="form-group">
+                <label for="bookingDate">Fecha y hora</label>
+                <input id="bookingDate" type="datetime-local">
+            </div>
+            <div class="form-group">
+                <label for="sellerMessage">Mensaje para el vendedor</label>
+                <textarea id="sellerMessage" rows="3" maxlength="1000" placeholder="Explica brevemente qué necesitas"></textarea>
+            </div>
+            <p id="serviceDialogStatus" class="form-error" role="status"></p>
+            <div class="dialog-actions">
+                <button class="btn btn-secondary" type="button" onclick="contactSeller()">💬 Contactar</button>
+                <button class="btn btn-success" type="button" onclick="bookService()">📅 Reservar</button>
+            </div>
+        </div>
+    </dialog>
+
     <dialog id="accountDialog">
         <div class="dialog-body">
             <h3>👤 Mi cuenta</h3>
@@ -375,6 +403,7 @@
     <script>
         const API_URL = window.SKILLHUB_API_URL || 'https://skillhub-backend-b5iy.onrender.com';
         let session = JSON.parse(sessionStorage.getItem('skillhubSession') || 'null');
+        let selectedServiceId = null;
         const offensiveWords = ["palabramala1", "estafa", "fraude", "groseria1"];
 
         let servicesData = [
@@ -497,7 +526,11 @@
                         </div>
                         <div>
                             <div class="price">${price.toFixed(2)} USD <span style="font-size:0.75rem; color:gray;">(${hourly.toFixed(2)}/hr)</span></div>
-                            <button class="btn btn-success" onclick="bookService(${Number(s.id)})">Reservar / Solicitar</button>
+                            <div class="service-meta">Por ${escapeHtml(s.providerName || 'Proveedor de SkillHub')}</div>
+                            <div class="service-actions">
+                                <button class="btn btn-secondary" onclick="openServiceDialog(${Number(s.id)})">Ver detalles</button>
+                                <button class="btn btn-success" onclick="openServiceDialog(${Number(s.id)}, true)">Reservar</button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -588,26 +621,69 @@
             window.location.href = `mailto:support.hubskill@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent("De: " + email + "\n\n" + msg)}`;
         }
 
-        async function bookService(serviceId) {
+        function openServiceDialog(serviceId, focusDate = false) {
+            const service = servicesData.find((item) => Number(item.id) === Number(serviceId));
+            if (!service) return;
+            selectedServiceId = Number(serviceId);
+            document.getElementById('dialogServiceName').textContent = service.name;
+            document.getElementById('dialogProvider').textContent = `Ofrecido por ${service.providerName || 'Proveedor de SkillHub'} · ${service.area || 'Remoto'}`;
+            document.getElementById('dialogDescription').textContent = service.desc || '';
+            document.getElementById('dialogPrice').textContent = `${(Number(service.price) || 0).toFixed(2)} USD`;
+            document.getElementById('bookingDate').value = '';
+            document.getElementById('sellerMessage').value = '';
+            document.getElementById('serviceDialogStatus').textContent = '';
+            document.getElementById('serviceDialog').showModal();
+            if (focusDate) setTimeout(() => document.getElementById('bookingDate').focus(), 50);
+        }
+
+        async function contactSeller() {
             if (!session || session.user.role === 'admin') {
-                alert('Inicia sesión para reservar.');
+                document.getElementById('serviceDialogStatus').textContent = 'Inicia sesión para contactar al vendedor.';
                 return;
             }
-            const service = servicesData.find((item) => Number(item.id) === Number(serviceId));
-            const date = prompt('Fecha y hora (ejemplo: 2026-09-15T10:00):');
-            if (!service || !date) return;
+            const message = document.getElementById('sellerMessage').value.trim();
+            if (!message) {
+                document.getElementById('serviceDialogStatus').textContent = 'Escribe un mensaje para el vendedor.';
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}/api/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.token}` },
+                    body: JSON.stringify({ serviceId: selectedServiceId, message })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'No se pudo enviar el mensaje');
+                document.getElementById('serviceDialogStatus').style.color = 'var(--success)';
+                document.getElementById('serviceDialogStatus').textContent = 'Mensaje enviado al vendedor.';
+            } catch (error) {
+                document.getElementById('serviceDialogStatus').textContent = error.message;
+            }
+        }
+
+        async function bookService() {
+            if (!session || session.user.role === 'admin') {
+                document.getElementById('serviceDialogStatus').textContent = 'Inicia sesión para reservar.';
+                return;
+            }
+            const date = document.getElementById('bookingDate').value;
+            const notes = document.getElementById('sellerMessage').value.trim();
+            if (!date) {
+                document.getElementById('serviceDialogStatus').textContent = 'Selecciona una fecha y hora.';
+                return;
+            }
             try {
                 const response = await fetch(`${API_URL}/api/bookings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.token}` },
-                    body: JSON.stringify({ serviceId: Number(service.id), date })
+                    body: JSON.stringify({ serviceId: selectedServiceId, date, notes })
                 });
-                const data = await response.json();
+                const data = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(data.error || 'No se pudo reservar');
-                alert('Reserva creada correctamente.');
+                document.getElementById('serviceDialog').close();
                 switchTab('tab-bookings', document.querySelectorAll('.nav-item')[2]);
             } catch (error) {
-                alert(error.message);
+                document.getElementById('serviceDialogStatus').textContent = error.message;
             }
         }
 
