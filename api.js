@@ -1,4 +1,4 @@
-const API_URL = window.SKILLHUB_API_URL || 'https://skillhub-backend.onrender.com';
+const API_URL = window.SKILLHUB_API_URL || 'https://skillhub-backend-b5iy.onrender.com';
 
 export async function apiRequest(endpoint, method = 'GET', data = null) {
     const session = JSON.parse(sessionStorage.getItem('skillhubSession') || 'null');
