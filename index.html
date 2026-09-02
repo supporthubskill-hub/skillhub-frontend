@@ -82,8 +82,7 @@
 
         input[type="text"],
         input[type="number"],
-        textarea,
-        select {
+        textarea {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid var(--border-color);
@@ -93,7 +92,7 @@
             transition: border-color 0.2s;
         }
 
-        input:focus, textarea:focus, select:focus {
+        input:focus, textarea:focus {
             border-color: var(--primary-color);
         }
 
@@ -112,6 +111,31 @@
 
         button:hover {
             background-color: var(--primary-hover);
+        }
+
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .status-success {
+            background-color: #dcfce7;
+            color: #166534;
+            display: block;
+        }
+
+        .status-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            display: block;
         }
 
         footer {
@@ -155,7 +179,8 @@
                         <textarea id="description" rows="4" placeholder="Describe lo que ofreces..." required></textarea>
                     </div>
 
-                    <button type="submit">Publicar Habilidad</button>
+                    <button type="submit" id="submitBtn">Publicar Habilidad</button>
+                    <div id="statusMessage" class="status-message"></div>
                 </form>
             </section>
         </main>
@@ -166,5 +191,57 @@
         </footer>
     </div>
 
+    <!-- Script de conexión al Backend -->
+    <script src="api.js"></script>
+    <script>
+        const skillForm = document.getElementById('skillForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMessage = document.getElementById('statusMessage');
+
+        skillForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Deshabilitar botón durante el envío
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Publicando...';
+            statusMessage.className = 'status-message';
+            statusMessage.style.display = 'none';
+
+            const skillData = {
+                title: document.getElementById('title').value,
+                commission: parseFloat(document.getElementById('commission').value),
+                description: document.getElementById('description').value
+            };
+
+            try {
+                // Llama a la función de api.js o ejecuta fetch si está expuesta
+                let response;
+                if (typeof createSkill === 'function') {
+                    response = await createSkill(skillData);
+                } else {
+                    // Fallback directo en caso de que api.js use la ruta del backend
+                    response = await fetch('/api/skills', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(skillData)
+                    });
+                }
+
+                if (response.ok || response.success) {
+                    statusMessage.textContent = '¡Habilidad publicada con éxito! 🎉';
+                    statusMessage.className = 'status-message status-success';
+                    skillForm.reset();
+                } else {
+                    throw new Error('Error al enviar la habilidad');
+                }
+            } catch (error) {
+                statusMessage.textContent = 'Ocurrió un error al publicar. Inténtalo de nuevo.';
+                statusMessage.className = 'status-message status-error';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Publicar Habilidad';
+            }
+        });
+    </script>
 </body>
 </html>
