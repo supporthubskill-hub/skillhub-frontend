@@ -185,20 +185,22 @@
     <!-- 3. RESERVACIONES Y CALENDARIO -->
     <section id="tab-bookings" class="tab-content">
         <div class="card">
-            <h3>📅 Reservaciones y Citas</h3>
-            <p style="font-size: 0.85rem; color: gray; margin-bottom: 12px;">Gestión de agendas y solicitudes recibidas</p>
-            <div id="bookingsList">
-                <div class="card" style="border-left: 4px solid var(--primary);">
-                    <h4>Mantenimiento Técnico</h4>
-                    <p style="font-size:0.85rem;"><strong>Cliente:</strong> María G.</p>
-                    <p style="font-size:0.85rem;"><strong>Fecha/Hora:</strong> 15 Sept, 10:00 AM</p>
-                    <p style="font-size:0.85rem;"><strong>Estado:</strong> <span style="color:var(--success);">Confirmada</span></p>
-                    <div style="display:flex; gap:8px; margin-top:8px;">
-                        <button class="btn btn-secondary" style="font-size:0.8rem; padding:6px;" onclick="alert('Iniciando proceso de reprogramación...')">Reprogramar</button>
-                        <button class="btn btn-danger" style="font-size:0.8rem; padding:6px;" onclick="alert('Reserva cancelada.')">Cancelar</button>
-                    </div>
+            <h3>🗓️ Mi disponibilidad</h3>
+            <p class="service-meta">Añade horarios a los servicios que publicaste.</p>
+            <form onsubmit="addAvailability(event)" style="margin-top:12px;">
+                <div class="form-group"><label for="availabilityService">Servicio</label><select id="availabilityService" required></select></div>
+                <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
+                    <div class="form-group"><label for="availabilityStart">Fecha y hora</label><input id="availabilityStart" type="datetime-local" required></div>
+                    <div class="form-group"><label for="availabilityDuration">Duración</label><select id="availabilityDuration"><option value="30">30 min</option><option value="60" selected>1 hora</option><option value="90">1.5 horas</option><option value="120">2 horas</option></select></div>
                 </div>
-            </div>
+                <button class="btn" type="submit">Añadir horario</button>
+                <p id="availabilityStatus" class="form-error" role="status"></p>
+            </form>
+            <div id="availabilityList"></div>
+        </div>
+        <div class="card">
+            <h3>📅 Mis reservaciones</h3>
+            <div id="bookingsList" style="margin-top:12px;"><div class="chat-empty">Inicia sesión para ver tus reservaciones.</div></div>
         </div>
     </section>
 
@@ -356,7 +358,7 @@
             <p id="dialogPrice" class="dialog-price"></p>
             <div class="form-group">
                 <label for="bookingDate">Fecha y hora</label>
-                <input id="bookingDate" type="datetime-local">
+                <select id="bookingDate"><option value="">Selecciona un horario</option></select>
             </div>
             <div class="form-group">
                 <label for="sellerMessage">Mensaje para el vendedor</label>
@@ -557,6 +559,7 @@
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             if (tabId === 'tab-chat') loadConversations();
+            if (tabId === 'tab-bookings') loadCalendar();
             if(btn) btn.classList.add('active');
         }
 
@@ -699,7 +702,7 @@
             window.location.href = `mailto:support.hubskill@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent("De: " + email + "\n\n" + msg)}`;
         }
 
-        function openServiceDialog(serviceId, focusDate = false) {
+        async function openServiceDialog(serviceId, focusDate = false) {
             const service = servicesData.find((item) => Number(item.id) === Number(serviceId));
             if (!service) return;
             selectedServiceId = Number(serviceId);
@@ -707,11 +710,26 @@
             document.getElementById('dialogProvider').textContent = `Ofrecido por ${service.providerName || 'Proveedor de SkillHub'} · ${service.area || 'Remoto'}`;
             document.getElementById('dialogDescription').textContent = service.desc || '';
             document.getElementById('dialogPrice').textContent = `${(Number(service.price) || 0).toFixed(2)} USD`;
-            document.getElementById('bookingDate').value = '';
+            const slotSelect = document.getElementById('bookingDate');
+            slotSelect.innerHTML = '<option value="">Cargando horarios…</option>';
             document.getElementById('sellerMessage').value = '';
             document.getElementById('serviceDialogStatus').textContent = '';
             document.getElementById('serviceDialog').showModal();
-            if (focusDate) setTimeout(() => document.getElementById('bookingDate').focus(), 50);
+            try {
+                const response = await fetch(`${API_URL}/api/services/${serviceId}/availability`);
+                const slots = await response.json();
+                slotSelect.innerHTML = '<option value="">Selecciona un horario</option>';
+                slots.forEach((slot) => {
+                    const option = document.createElement('option');
+                    option.value = slot.startsAt;
+                    option.textContent = `${new Date(slot.startsAt).toLocaleString()} · ${slot.durationMinutes} min`;
+                    slotSelect.appendChild(option);
+                });
+                if (!slots.length) slotSelect.innerHTML = '<option value="">No hay horarios disponibles</option>';
+            } catch {
+                slotSelect.innerHTML = '<option value="">No se pudieron cargar los horarios</option>';
+            }
+            if (focusDate) setTimeout(() => slotSelect.focus(), 50);
         }
 
         async function contactSeller() {
@@ -763,6 +781,58 @@
             } catch (error) {
                 document.getElementById('serviceDialogStatus').textContent = error.message;
             }
+        }
+
+        async function loadCalendar() {
+            const serviceSelect = document.getElementById('availabilityService');
+            const list = document.getElementById('availabilityList');
+            const bookings = document.getElementById('bookingsList');
+            if (!session || session.user.role === 'admin') {
+                serviceSelect.innerHTML = '<option value="">Inicia sesión</option>';
+                list.innerHTML = '';
+                bookings.innerHTML = '<div class="chat-empty">Inicia sesión para ver tus reservaciones.</div>';
+                return;
+            }
+            const owned = servicesData.filter((service) => String(service.providerId) === String(session.user.id));
+            serviceSelect.innerHTML = '<option value="">Selecciona un servicio</option>';
+            owned.forEach((service) => serviceSelect.add(new Option(service.name, service.id)));
+            try {
+                const headers = { 'Authorization': `Bearer ${session.token}` };
+                const [slotsResponse, bookingsResponse] = await Promise.all([
+                    fetch(`${API_URL}/api/availability/me`, { headers }),
+                    fetch(`${API_URL}/api/bookings/me`, { headers })
+                ]);
+                const slots = await slotsResponse.json();
+                const rows = await bookingsResponse.json();
+                list.innerHTML = slots.length ? slots.map((slot) => `<div class="card" style="padding:12px;margin-top:8px;"><strong>${escapeHtml(slot.serviceName)}</strong><p class="service-meta">${new Date(slot.startsAt).toLocaleString()} · ${slot.durationMinutes} min · ${slot.available ? 'Disponible' : 'Reservado'}</p>${slot.available ? `<button class="btn btn-danger" style="margin-top:8px" onclick="deleteAvailability(${slot.id})">Eliminar horario</button>` : ''}</div>`).join('') : '<div class="chat-empty">No has añadido horarios.</div>';
+                bookings.innerHTML = rows.length ? rows.map((item) => `<div class="card" style="padding:12px;"><strong>${escapeHtml(item.serviceName)}</strong><p class="service-meta">${new Date(item.date).toLocaleString()} · ${escapeHtml(item.status)} · ${item.perspective === 'provider' ? 'Te contrataron' : 'Tu reservación'}</p></div>`).join('') : '<div class="chat-empty">Aún no tienes reservaciones.</div>';
+            } catch (error) {
+                document.getElementById('availabilityStatus').textContent = error.message;
+            }
+        }
+
+        async function addAvailability(event) {
+            event.preventDefault();
+            const status = document.getElementById('availabilityStatus');
+            const startsAt = document.getElementById('availabilityStart').value;
+            try {
+                const response = await fetch(`${API_URL}/api/availability`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.token}` },
+                    body: JSON.stringify({ serviceId: Number(document.getElementById('availabilityService').value), startsAt: new Date(startsAt).toISOString(), durationMinutes: Number(document.getElementById('availabilityDuration').value) })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'No se pudo añadir el horario');
+                status.style.color = 'var(--success)';
+                status.textContent = 'Horario añadido.';
+                event.target.reset();
+                await loadCalendar();
+            } catch (error) { status.textContent = error.message; }
+        }
+
+        async function deleteAvailability(id) {
+            const response = await fetch(`${API_URL}/api/availability/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${session.token}` } });
+            if (response.ok) loadCalendar();
         }
 
         function toggleDarkMode() {
