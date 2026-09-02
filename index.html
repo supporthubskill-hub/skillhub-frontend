@@ -501,8 +501,10 @@
             const input = document.getElementById('chatInput');
             if (!input.value.trim()) return;
             const box = document.getElementById('chatBox');
-            const cleanText = filterOffensiveContent(input.value);
-            box.innerHTML += `<div class="msg me">${cleanText}</div>`;
+            const message = document.createElement('div');
+            message.className = 'msg me';
+            message.textContent = filterOffensiveContent(input.value);
+            box.appendChild(message);
             input.value = '';
             box.scrollTop = box.scrollHeight;
         }
