@@ -20,44 +20,21 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
-
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
-
-          text = text.replace(
-              "onclick=\"switchTab('tab-admin', this)\"",
-              "onclick=\"window.location.href='/admin'\""
-          )
-
-          replacement = '''<!-- 7. PANEL DE ADMINISTRACIÓN -->
-    <section id="tab-admin" class="tab-content">
-        <div class="card">
-            <h3>⚙️ Panel Administrativo</h3>
-            <p class="service-meta" style="margin-top:10px;">El panel administrativo ahora usa datos reales del backend.</p>
-            <button class="btn" style="margin-top:12px;" onclick="window.location.href='/admin'">Abrir panel administrativo real</button>
-        </div>
-    </section>
-
-    <!-- 8. SOPORTE Y AYUDA -->'''
-
-          updated, count = re.subn(
-              r'<!-- 7\. PANEL DE ADMINISTRACIÓN -->.*?<!-- 8\. SOPORTE Y AYUDA -->',
-              replacement,
-              text,
-              flags=re.S,
-          )
+          text = text.replace("onclick=\"switchTab('tab-admin', this)\"", "onclick=\"window.location.href='/admin'\"")
+          replacement = '<!-- 7. PANEL DE ADMINISTRACIÓN -->\n    <section id="tab-admin" class="tab-content">\n        <div class="card">\n            <h3>⚙️ Panel Administrativo</h3>\n            <p class="service-meta" style="margin-top:10px;">El panel administrativo ahora usa datos reales del backend.</p>\n            <button class="btn" style="margin-top:12px;" onclick="window.location.href=\'/admin\'">Abrir panel administrativo real</button>\n        </div>\n    </section>\n\n    <!-- 8. SOPORTE Y AYUDA -->'
+          updated, count = re.subn(r'<!-- 7\. PANEL DE ADMINISTRACIÓN -->.*?<!-- 8\. SOPORTE Y AYUDA -->', replacement, text, flags=re.S)
           if count != 1:
               raise SystemExit(f'Expected one legacy admin section, found {count}')
           if '1,240' in updated or '<strong>310</strong>' in updated or '$1,120' in updated:
               raise SystemExit('Legacy demo admin values are still present')
-
           path.write_text(updated, encoding='utf-8')
           PY
-      - name: Remove temporary workflow and commit
+      - name: Commit change
         run: |
-          rm .github/workflows/replace-old-admin.yml
           git config user.name "SkillHub Automation"
           git config user.email "actions@users.noreply.github.com"
-          git add -A
+          git add index.html
           git commit -m "Route Admin button to real dashboard"
           git push origin HEAD:chatgpt/replace-old-admin
