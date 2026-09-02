@@ -3,245 +3,429 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkillHub 🚀 - Plataforma de Habilidades</title>
+    <title>SkillHub 🚀 - Marketplace Completo de Servicios</title>
     <style>
         :root {
-            --primary-color: #4f46e5;
+            --primary: #4f46e5;
             --primary-hover: #4338ca;
-            --bg-color: #f8fafc;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --bg: #f8fafc;
             --card-bg: #ffffff;
-            --text-color: #1e293b;
-            --border-color: #e2e8f0;
+            --text: #1e293b;
+            --border: #e2e8f0;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        body.dark-mode {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --border: #334155;
         }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            padding: 16px;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 75px; transition: background 0.3s; }
 
-        header {
-            text-align: center;
-            padding: 24px 0;
-            margin-bottom: 24px;
-            background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+        /* Header Navigation */
+        header { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 12px 16px; position: sticky; top: 0; z-index: 100; }
+        .nav-container { max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.4rem; font-weight: 800; color: var(--primary); text-decoration: none; }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+        
+        .icon-btn { background: transparent; border: 1px solid var(--border); padding: 6px 12px; border-radius: 8px; color: var(--text); cursor: pointer; }
 
-        h1 {
-            color: var(--primary-color);
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-        }
+        /* Tab Layout */
+        .tab-content { display: none; max-width: 1000px; margin: 20px auto; padding: 0 16px; }
+        .tab-content.active { display: block; }
 
-        p.subtitle {
-            color: #64748b;
-            font-size: 0.95rem;
-        }
+        /* General Card & Forms */
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text); }
+        
+        .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-secondary { background: #64748b; }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
+        /* Grid System */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .service-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
+        .price { font-size: 1.2rem; font-weight: 700; color: var(--success); margin: 8px 0; }
 
-        .card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border: 1px solid var(--border-color);
-        }
+        /* Navigation Bar */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000; overflow-x: auto; }
+        .nav-item { background: none; border: none; color: var(--text); font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; cursor: pointer; opacity: 0.7; min-width: 60px; }
+        .nav-item.active { opacity: 1; color: var(--primary); font-weight: bold; }
+        .nav-item span { font-size: 1.2rem; }
 
-        .card h2 {
-            font-size: 1.2rem;
-            margin-bottom: 12px;
-            color: #0f172a;
-        }
+        /* Stats & Panels */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+        .stat-box { background: var(--bg); padding: 12px; border-radius: 8px; text-align: center; border: 1px solid var(--border); }
+        
+        /* Chat Container */
+        .chat-box { height: 250px; border: 1px solid var(--border); border-radius: 8px; overflow-y: auto; padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { background: var(--border); padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 0.9rem; }
+        .msg.me { align-self: flex-end; background: var(--primary); color: white; }
 
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        label {
-            display: block;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: #334155;
-        }
-
-        input[type="text"],
-        input[type="number"],
-        textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input:focus, textarea:focus {
-            border-color: var(--primary-color);
-        }
-
-        button {
-            width: 100%;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: var(--primary-hover);
-        }
-
-        button:disabled {
-            background-color: #94a3b8;
-            cursor: not-allowed;
-        }
-
-        .status-message {
-            margin-top: 12px;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        .status-success {
-            background-color: #dcfce7;
-            color: #166534;
-            display: block;
-        }
-
-        .status-error {
-            background-color: #fee2e2;
-            color: #991b1b;
-            display: block;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 32px;
-            padding: 16px;
-            font-size: 0.85rem;
-            color: #64748b;
-        }
-
-        footer a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
+        /* Review Stars */
+        .rating { color: #f59e0b; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>SkillHub 🚀</h1>
-            <p class="subtitle">Conecta, comparte tus habilidades y establece tus comisiones</p>
-        </header>
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="#" class="logo">SkillHub 🚀</a>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="toggleDarkMode()">🌙 Modo</button>
+                <button class="icon-btn" onclick="switchTab('tab-notifications')">🔔 <span id="notif-count">3</span></button>
+            </div>
+        </div>
+    </header>
 
-        <main>
-            <section class="card">
-                <h2>Publicar Nueva Habilidad</h2>
-                <form id="skillForm">
-                    <div class="form-group">
-                        <label for="title">Título de la habilidad</label>
-                        <input type="text" id="title" placeholder="Ej: Desarrollo Web con Node.js" required>
+    <!-- 1. BÚSQUEDA Y EXPLORACIÓN -->
+    <main id="tab-search" class="tab-content active">
+        <div class="card">
+            <h3>🔍 Buscar Servicios</h3>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                <input type="text" id="searchInput" placeholder="Barra de búsqueda..." onkeyup="filterServices()">
+                <div style="display: flex; gap: 8px;">
+                    <select id="categoryFilter" onchange="filterServices()">
+                        <option value="">Todas las Categorías</option>
+                        <option value="Desarrollo">Desarrollo Web & Software</option>
+                        <option value="Hogar">Reparación y Limpieza</option>
+                        <option value="Educación">Clases y Tutorías</option>
+                    </select>
+                    <select id="sortFilter" onchange="filterServices()">
+                        <option value="default">Ordenar por</option>
+                        <option value="price-asc">Precio: Menor a Mayor</option>
+                        <option value="rating">Mejor Calificación</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid" id="servicesGrid"></div>
+    </main>
+
+    <!-- 2. CREAR / EDITAR SERVICIO (PROVEEDOR) -->
+    <section id="tab-publish" class="tab-content">
+        <div class="card">
+            <h3>🛠️ Publicar Servicio</h3>
+            <form id="serviceForm" onsubmit="saveService(event)">
+                <div class="form-group">
+                    <label>Nombre del servicio</label>
+                    <input type="text" id="serviceName" required placeholder="Ej: Reparación de Computadoras a Domicilio">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="serviceDesc" rows="3" required placeholder="Detalla lo que incluye tu servicio..."></textarea>
+                </div>
+                <div class="form-group" style="display: flex; gap: 8px;">
+                    <div style="flex:1;">
+                        <label>Categoría</label>
+                        <select id="serviceCat">
+                            <option value="Desarrollo">Desarrollo</option>
+                            <option value="Hogar">Hogar</option>
+                            <option value="Educación">Educación</option>
+                        </select>
                     </div>
-
-                    <div class="form-group">
-                        <label for="commission">Comisión personalizada ($ USD)</label>
-                        <input type="number" id="commission" placeholder="25.00" min="0" step="0.01" required>
+                    <div style="flex:1;">
+                        <label>Tipo de Servicio</label>
+                        <select id="serviceType">
+                            <option value="Remoto">Remoto</option>
+                            <option value="Presencial">Presencial</option>
+                        </select>
                     </div>
-
-                    <div class="form-group">
-                        <label for="description">Descripción</label>
-                        <textarea id="description" rows="4" placeholder="Describe lo que ofreces..." required></textarea>
+                </div>
+                <div class="form-group" style="display: flex; gap: 8px;">
+                    <div style="flex:1;">
+                        <label>Precio Fijo ($)</label>
+                        <input type="number" id="servicePrice" placeholder="50.00">
                     </div>
+                    <div style="flex:1;">
+                        <label>Precio por Hora ($)</label>
+                        <input type="number" id="serviceHourly" placeholder="15.00">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ubicación / Área de Cobertura</label>
+                    <input type="text" id="serviceArea" placeholder="Ej: Ciudad de México / Remoto Global">
+                </div>
+                <button type="submit" class="btn">Guardar y Publicar Servicio</button>
+            </form>
+        </div>
+    </section>
 
-                    <button type="submit" id="submitBtn">Publicar Habilidad</button>
-                    <div id="statusMessage" class="status-message"></div>
-                </form>
-            </section>
-        </main>
+    <!-- 3. RESERVACIONES Y CALENDARIO -->
+    <section id="tab-bookings" class="tab-content">
+        <div class="card">
+            <h3>📅 Reservaciones y Citas</h3>
+            <p style="font-size: 0.85rem; color: gray; margin-bottom: 12px;">Gestión de agendas y solicitudes recibidas</p>
+            <div id="bookingsList">
+                <div class="card" style="border-left: 4px solid var(--primary);">
+                    <h4>Mantenimiento Técnico</h4>
+                    <p style="font-size:0.85rem;"><strong>Cliente:</strong> María G.</p>
+                    <p style="font-size:0.85rem;"><strong>Fecha/Hora:</strong> 15 Sept, 10:00 AM</p>
+                    <p style="font-size:0.85rem;"><strong>Estado:</strong> <span style="color:var(--success);">Confirmada</span></p>
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        <button class="btn btn-secondary" style="font-size:0.8rem; padding:6px;" onclick="alert('Iniciando proceso de reprogramación...')">Reprogramar</button>
+                        <button class="btn btn-danger" style="font-size:0.8rem; padding:6px;" onclick="alert('Reserva cancelada.')">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        <footer>
-            <p>© SkillHub - Todos los derechos reservados</p>
-            <p>Soporte y contacto: <a href="mailto:support.hubskill@gmail.com">support.hubskill@gmail.com</a></p>
-        </footer>
-    </div>
+    <!-- 4. COMUNICACIÓN Y CHAT -->
+    <section id="tab-chat" class="tab-content">
+        <div class="card">
+            <h3>💬 Chat / Comunicación</h3>
+            <p style="font-size: 0.85rem; color: gray; margin-bottom: 8px;">Mensajes directos, presupuesto e imágenes</p>
+            <div class="chat-box" id="chatBox">
+                <div class="msg">Hola, quisiera consultar si tienes disponibilidad este viernes.</div>
+                <div class="msg me">¡Hola! Sí, tengo espacio disponible por la mañana. ¿Qué servicio requieres?</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="chatInput" placeholder="Escribe un mensaje...">
+                <button class="btn" style="width: 80px;" onclick="sendMessage()">Enviar</button>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button class="btn btn-secondary" style="font-size: 0.75rem;" onclick="alert('Adjuntar foto/video enviado')">📷 Adjuntar Imagen</button>
+                <button class="btn btn-secondary" style="font-size: 0.75rem;" onclick="alert('Presupuesto de $60 USD enviado por chat')">📄 Enviar Presupuesto</button>
+            </div>
+        </div>
+    </section>
 
-    <!-- Script de conexión al Backend -->
-    <script src="api.js"></script>
+    <!-- 5. PANEL DE PROVEEDOR & CLIENTE -->
+    <section id="tab-dashboard" class="tab-content">
+        <div class="card">
+            <h3>💼 Panel del Proveedor</h3>
+            <div class="stats-grid" style="margin-top: 10px;">
+                <div class="stat-box"><p style="font-size:0.75rem;">Ganancias</p><strong>$420.00</strong></div>
+                <div class="stat-box"><p style="font-size:0.75rem;">Pendientes</p><strong>$85.00</strong></div>
+                <div class="stat-box"><p style="font-size:0.75rem;">Clientes</p><strong>18</strong></div>
+            </div>
+            <button class="btn btn-success" style="margin-top: 10px;" onclick="alert('Solicitud de cobro procesada.')">Solicitar Pago / Retiro</button>
+        </div>
+
+        <div class="card">
+            <h3>👤 Panel del Cliente</h3>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <p><strong>Servicios Reservados Activos:</strong> 1</p>
+                <p><strong>Historial de Servicios Completados:</strong> 4</p>
+                <button class="btn btn-secondary" onclick="switchTab('tab-reviews')">⭐ Dejar Reseña y Calificar</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🆔 Verificación y Seguridad</h3>
+            <p style="font-size:0.85rem; margin-bottom:8px;"><strong>Estado de Identidad:</strong> Verificado ✅</p>
+            <p style="font-size:0.85rem; margin-bottom:8px;"><strong>Teléfono / Email:</strong> Confirmados ✅</p>
+            <button class="btn btn-danger" style="font-size:0.8rem;" onclick="alert('Reporte enviado al equipo de seguridad.')">Reportar Usuario o Servicio</button>
+        </div>
+    </section>
+
+    <!-- 6. RESEÑAS -->
+    <section id="tab-reviews" class="tab-content">
+        <div class="card">
+            <h3>⭐ Reseñas y Calificaciones</h3>
+            <div class="form-group" style="margin-top:10px;">
+                <label>Calificar Servicio</label>
+                <select id="reviewRating">
+                    <option>5 Estrellas ⭐⭐⭐⭐⭐</option>
+                    <option>4 Estrellas ⭐⭐⭐⭐</option>
+                    <option>3 Estrellas ⭐⭐⭐</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Comentario</label>
+                <textarea id="reviewText" rows="2" placeholder="Escribe tus opiniones sobre el proveedor..."></textarea>
+            </div>
+            <button class="btn" onclick="alert('¡Gracias! Tu reseña ha sido publicada.')">Publicar Calificación</button>
+        </div>
+    </section>
+
+    <!-- 7. PANEL DE ADMINISTRACIÓN -->
+    <section id="tab-admin" class="tab-content">
+        <div class="card">
+            <h3>⚙️ Panel Administrativo</h3>
+            <div class="stats-grid" style="margin-top: 10px;">
+                <div class="stat-box"><p style="font-size:0.75rem;">Usuarios</p><strong>1,240</strong></div>
+                <div class="stat-box"><p style="font-size:0.75rem;">Proveedores</p><strong>310</strong></div>
+                <div class="stat-box"><p style="font-size:0.75rem;">Comisiones</p><strong>$1,120</strong></div>
+            </div>
+            <h4 style="margin-top: 16px; margin-bottom: 8px;">Acciones de Control</h4>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button class="btn btn-secondary" onclick="alert('Desplegando lista completa de proveedores para aprobar/rechazar...')">Aprobar / Rechazar Proveedores</button>
+                <button class="btn btn-secondary" onclick="alert('Revisando reportes de usuarios...')">Gestionar Disputas y Reportes</button>
+                <button class="btn btn-danger" onclick="alert('Usuario suspendido del sistema.')">Suspender / Bloquear Cuenta</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. SOPORTE Y AYUDA -->
+    <section id="tab-support" class="tab-content">
+        <div class="card">
+            <h3>🆘 Centro de Ayuda y Soporte</h3>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
+                <button class="btn btn-secondary" onclick="alert('Iniciando chat con soporte técnico en vivo...')">💬 Chat con Soporte</button>
+                <button class="btn btn-secondary" onclick="alert('Abriendo formulario de reclamos...')">📩 Presentar Reclamo / Disputa</button>
+                <div class="card" style="margin-top:8px; padding:10px;">
+                    <strong>Preguntas Frecuentes:</strong>
+                    <p style="font-size:0.8rem; margin-top:4px;">• ¿Cómo funciona la protección de pagos?</p>
+                    <p style="font-size:0.8rem;">• ¿Cómo reprogramar una cita reservada?</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. NOTIFICACIONES -->
+    <section id="tab-notifications" class="tab-content">
+        <div class="card">
+            <h3>🔔 Notificaciones</h3>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+                <div class="card" style="margin:0; padding:10px;">📅 Nueva solicitud de reserva para mañana.</div>
+                <div class="card" style="margin:0; padding:10px;">💬 Tienes un nuevo mensaje del cliente.</div>
+                <div class="card" style="margin:0; padding:10px;">💳 Pago realizado con éxito y mantenido en custodia.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('tab-search', this)">
+            <span>🔍</span>Buscar
+        </button>
+        <button class="nav-item" onclick="switchTab('tab-publish', this)">
+            <span>🛠️</span>Servicios
+        </button>
+        <button class="nav-item" onclick="switchTab('tab-bookings', this)">
+            <span>📅</span>Reservas
+        </button>
+        <button class="nav-item" onclick="switchTab('tab-chat', this)">
+            <span>💬</span>Chat
+        </button>
+        <button class="nav-item" onclick="switchTab('tab-dashboard', this)">
+            <span>📊</span>Panel
+        </button>
+        <button class="nav-item" onclick="switchTab('tab-admin', this)">
+            <span>⚙️</span>Admin
+        </button>
+        <button class="nav-item" onclick="switchTab('tab-support', this)">
+            <span>🆘</span>Soporte
+        </button>
+    </nav>
+
+    <!-- App Logic -->
     <script>
-        const skillForm = document.getElementById('skillForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const statusMessage = document.getElementById('statusMessage');
+        // Credenciales de Administrador
+        const ADMIN_EMAIL = "support.hubskill@gmail.com";
+        const ADMIN_PASS = "SkillHub2026!AdminSec";
 
-        skillForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        let servicesData = [
+            { id: 1, name: "Desarrollo de Software Fullstack", desc: "Creación de plataformas web a medida.", cat: "Desarrollo", price: 80, hourly: 25, rating: 5.0, area: "Remoto" },
+            { id: 2, name: "Reparación y Mantenimiento de Equipos", desc: "Diagnóstico y formateo de laptops/PC.", cat: "Hogar", price: 35, hourly: 15, rating: 4.8, area: "Presencial / Local" }
+        ];
 
-            // Deshabilitar botón durante el envío
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Publicando...';
-            statusMessage.className = 'status-message';
-            statusMessage.style.display = 'none';
+        function renderServices(items) {
+            const grid = document.getElementById('servicesGrid');
+            grid.innerHTML = '';
+            items.forEach(s => {
+                grid.innerHTML += `
+                    <div class="service-card">
+                        <div>
+                            <span style="font-size:0.75rem; background:#e0e7ff; color:#4f46e5; padding:2px 6px; border-radius:4px; font-weight:bold;">${s.cat} - ${s.area}</span>
+                            <h4 style="margin-top:6px;">${s.name}</h4>
+                            <p style="font-size:0.85rem; color:gray; margin-top:4px;">${s.desc}</p>
+                            <div class="rating" style="margin-top:6px;">⭐ ${s.rating}</div>
+                        </div>
+                        <div>
+                            <div class="price">$${s.price} USD <span style="font-size:0.75rem; color:gray;">($${s.hourly}/hr)</span></div>
+                            <button class="btn btn-success" onclick="bookService('${s.name}')">Reservar / Solicitar</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
 
-            const skillData = {
-                title: document.getElementById('title').value,
-                commission: parseFloat(document.getElementById('commission').value),
-                description: document.getElementById('description').value
-            };
+        function switchTab(tabId, btn) {
+            // Protección de la pestaña de Administración
+            if (tabId === 'tab-admin') {
+                const emailInput = prompt("🔐 Ingrese su correo de Administrador:");
+                const passInput = prompt("🔑 Ingrese su contraseña:");
 
-            try {
-                // Llama a la función de api.js o ejecuta fetch si está expuesta
-                let response;
-                if (typeof createSkill === 'function') {
-                    response = await createSkill(skillData);
-                } else {
-                    // Fallback directo en caso de que api.js use la ruta del backend
-                    response = await fetch('/api/skills', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(skillData)
-                    });
+                if (emailInput !== ADMIN_EMAIL || passInput !== ADMIN_PASS) {
+                    alert("❌ Acceso denegado: Credenciales de administrador incorrectas.");
+                    return; // Bloquea la navegación si los datos no coinciden
                 }
-
-                if (response.ok || response.success) {
-                    statusMessage.textContent = '¡Habilidad publicada con éxito! 🎉';
-                    statusMessage.className = 'status-message status-success';
-                    skillForm.reset();
-                } else {
-                    throw new Error('Error al enviar la habilidad');
-                }
-            } catch (error) {
-                statusMessage.textContent = 'Ocurrió un error al publicar. Inténtalo de nuevo.';
-                statusMessage.className = 'status-message status-error';
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Publicar Habilidad';
+                alert("✅ ¡Bienvenido, Administrador!");
             }
-        });
+
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if(btn) btn.classList.add('active');
+        }
+
+        function saveService(e) {
+            e.preventDefault();
+            const newS = {
+                id: Date.now(),
+                name: document.getElementById('serviceName').value,
+                desc: document.getElementById('serviceDesc').value,
+                cat: document.getElementById('serviceCat').value,
+                price: parseFloat(document.getElementById('servicePrice').value) || 0,
+                hourly: parseFloat(document.getElementById('serviceHourly').value) || 0,
+                rating: 5.0,
+                area: document.getElementById('serviceArea').value || 'Remoto'
+            };
+            servicesData.unshift(newS);
+            renderServices(servicesData);
+            alert('¡Servicio registrado y publicado correctamente!');
+            document.getElementById('serviceForm').reset();
+            switchTab('tab-search', document.querySelectorAll('.nav-item')[0]);
+        }
+
+        function filterServices() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const cat = document.getElementById('categoryFilter').value;
+            const sort = document.getElementById('sortFilter').value;
+
+            let result = servicesData.filter(s => 
+                (s.name.toLowerCase().includes(query) || s.desc.toLowerCase().includes(query)) &&
+                (cat === "" || s.cat === cat)
+            );
+
+            if (sort === "price-asc") result.sort((a, b) => a.price - b.price);
+            if (sort === "rating") result.sort((a, b) => b.rating - a.rating);
+
+            renderServices(result);
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            if (!input.value.trim()) return;
+            const box = document.getElementById('chatBox');
+            box.innerHTML += `<div class="msg me">${input.value}</div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function bookService(title) {
+            alert(`Solicitud enviada para: ${title}. Selecciona la fecha en el módulo de reservaciones.`);
+            switchTab('tab-bookings', document.querySelectorAll('.nav-item')[2]);
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+        }
+
+        // Carga inicial
+        renderServices(servicesData);
     </script>
 </body>
 </html>
