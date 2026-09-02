@@ -69,6 +69,15 @@
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
         .stat-box { background: var(--bg); padding: 12px; border-radius: 8px; text-align: center; border: 1px solid var(--border); }
         
+        .messages-layout { display:grid; grid-template-columns:280px 1fr; gap:12px; }
+        .conversation-list { border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+        .conversation-item { width:100%; text-align:left; background:transparent; color:var(--text); border:0; border-bottom:1px solid var(--border); padding:12px; cursor:pointer; }
+        .conversation-item:hover, .conversation-item.active { background:var(--bg); }
+        .conversation-item small { display:block; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:4px; }
+        .chat-panel { min-width:0; }
+        .chat-empty { color:#64748b; padding:32px 12px; text-align:center; }
+        @media (max-width:700px) { .messages-layout { grid-template-columns:1fr; } .conversation-list { max-height:220px; overflow:auto; } }
+
         /* Chat Container */
         .chat-box { height: 250px; border: 1px solid var(--border); border-radius: 8px; overflow-y: auto; padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
         .msg { background: var(--border); padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 0.9rem; }
@@ -196,19 +205,19 @@
     <!-- 4. COMUNICACIÓN Y CHAT -->
     <section id="tab-chat" class="tab-content">
         <div class="card">
-            <h3>💬 Chat / Comunicación</h3>
-            <p style="font-size: 0.85rem; color: gray; margin-bottom: 8px;">Mensajes directos, presupuesto e imágenes</p>
-            <div class="chat-box" id="chatBox">
-                <div class="msg">Hola, quisiera consultar si tienes disponibilidad este viernes.</div>
-                <div class="msg me">¡Hola! Sí, tengo espacio disponible por la mañana. ¿Qué servicio requieres?</div>
-            </div>
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="chatInput" placeholder="Escribe un mensaje...">
-                <button class="btn" style="width: 80px;" onclick="sendMessage()">Enviar</button>
-            </div>
-            <div style="display: flex; gap: 8px; margin-top: 8px;">
-                <button class="btn btn-secondary" style="font-size: 0.75rem;" onclick="alert('Adjuntar foto/video enviado')">📷 Adjuntar Imagen</button>
-                <button class="btn btn-secondary" style="font-size: 0.75rem;" onclick="alert('Presupuesto de $60 USD enviado por chat')">📄 Enviar Presupuesto</button>
+            <h3>💬 Mensajes</h3>
+            <div id="chatLoginNotice" class="chat-empty">Inicia sesión para ver tus conversaciones.</div>
+            <div id="messagesLayout" class="messages-layout" hidden>
+                <div id="conversationList" class="conversation-list"></div>
+                <div class="chat-panel">
+                    <h4 id="chatTitle">Selecciona una conversación</h4>
+                    <div class="chat-box" id="chatBox"><div class="chat-empty">Tus mensajes aparecerán aquí.</div></div>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="chatInput" maxlength="1000" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter') sendMessage()">
+                        <button class="btn" style="width:90px;" onclick="sendMessage()">Enviar</button>
+                    </div>
+                    <p id="chatStatus" class="form-error" role="status"></p>
+                </div>
             </div>
         </div>
     </section>
@@ -404,6 +413,7 @@
         const API_URL = window.SKILLHUB_API_URL || 'https://skillhub-backend-b5iy.onrender.com';
         let session = JSON.parse(sessionStorage.getItem('skillhubSession') || 'null');
         let selectedServiceId = null;
+        let activeConversation = null;
         const offensiveWords = ["palabramala1", "estafa", "fraude", "groseria1"];
 
         let servicesData = [
@@ -546,6 +556,7 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
+            if (tabId === 'tab-chat') loadConversations();
             if(btn) btn.classList.add('active');
         }
 
@@ -600,16 +611,83 @@
             renderServices(result);
         }
 
-        function sendMessage() {
+        async function loadConversations() {
+            const notice = document.getElementById('chatLoginNotice');
+            const layout = document.getElementById('messagesLayout');
+            if (!session || session.user.role === 'admin') {
+                notice.hidden = false;
+                layout.hidden = true;
+                return;
+            }
+            notice.hidden = true;
+            layout.hidden = false;
+            try {
+                const response = await fetch(`${API_URL}/api/conversations`, { headers: { 'Authorization': `Bearer ${session.token}` } });
+                const items = await response.json();
+                if (!response.ok) throw new Error(items.error || 'No se pudieron cargar las conversaciones');
+                const list = document.getElementById('conversationList');
+                list.innerHTML = '';
+                if (!items.length) {
+                    list.innerHTML = '<div class="chat-empty">Aún no tienes conversaciones.</div>';
+                    return;
+                }
+                items.forEach((item) => {
+                    const button = document.createElement('button');
+                    button.className = 'conversation-item';
+                    button.innerHTML = `<strong>${escapeHtml(item.otherUserName)}</strong><small>${escapeHtml(item.serviceName)}</small><small>${escapeHtml(item.lastMessage)}</small>`;
+                    button.onclick = () => openConversation(item, button);
+                    list.appendChild(button);
+                });
+            } catch (error) {
+                document.getElementById('chatStatus').textContent = error.message;
+            }
+        }
+
+        async function openConversation(item, button) {
+            activeConversation = item;
+            document.querySelectorAll('.conversation-item').forEach((el) => el.classList.remove('active'));
+            button.classList.add('active');
+            document.getElementById('chatTitle').textContent = `${item.otherUserName} · ${item.serviceName}`;
+            try {
+                const response = await fetch(`${API_URL}/api/messages/${item.serviceId}/${item.otherUserId}`, { headers: { 'Authorization': `Bearer ${session.token}` } });
+                const messages = await response.json();
+                if (!response.ok) throw new Error(messages.error || 'No se pudo abrir la conversación');
+                const box = document.getElementById('chatBox');
+                box.innerHTML = '';
+                messages.forEach((msg) => {
+                    const node = document.createElement('div');
+                    node.className = String(msg.senderId) === String(session.user.id) ? 'msg me' : 'msg';
+                    node.textContent = msg.body;
+                    box.appendChild(node);
+                });
+                box.scrollTop = box.scrollHeight;
+            } catch (error) {
+                document.getElementById('chatStatus').textContent = error.message;
+            }
+        }
+
+        async function sendMessage() {
             const input = document.getElementById('chatInput');
-            if (!input.value.trim()) return;
-            const box = document.getElementById('chatBox');
-            const message = document.createElement('div');
-            message.className = 'msg me';
-            message.textContent = filterOffensiveContent(input.value);
-            box.appendChild(message);
-            input.value = '';
-            box.scrollTop = box.scrollHeight;
+            if (!activeConversation || !input.value.trim()) return;
+            const text = input.value.trim();
+            input.disabled = true;
+            try {
+                const response = await fetch(`${API_URL}/api/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.token}` },
+                    body: JSON.stringify({ serviceId: activeConversation.serviceId, recipientId: Number(activeConversation.otherUserId), message: text })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'No se pudo enviar');
+                input.value = '';
+                const activeButton = document.querySelector('.conversation-item.active');
+                await openConversation(activeConversation, activeButton);
+            } catch (error) {
+                document.getElementById('chatStatus').textContent = error.message;
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
         }
 
         function handleSupportSubmit(e) {
