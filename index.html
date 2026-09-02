@@ -80,6 +80,7 @@
         <div class="nav-container">
             <a href="#" class="logo">SkillHub 🚀</a>
             <div class="header-actions">
+                <button class="icon-btn" id="authButton" onclick="openAuth()">👤 Ingresar</button>
                 <button class="icon-btn" onclick="toggleDarkMode()">🌙 Modo</button>
                 <button class="icon-btn" onclick="switchTab('tab-notifications')">🔔 <span id="notif-count">3</span></button>
             </div>
@@ -329,7 +330,8 @@
 
     <!-- App Logic con Integración de Backend y Seguridad -->
     <script>
-        const API_URL = 'https://skillhub-backend.onrender.com';
+        const API_URL = window.SKILLHUB_API_URL || 'https://skillhub-backend-b5iy.onrender.com';
+        let session = JSON.parse(sessionStorage.getItem('skillhubSession') || 'null');
         const offensiveWords = ["palabramala1", "estafa", "fraude", "groseria1"];
 
         let servicesData = [
@@ -344,6 +346,52 @@
                 filteredText = filteredText.replace(regex, '***');
             });
             return filteredText;
+        }
+
+        function escapeHtml(value) {
+            const node = document.createElement('div');
+            node.textContent = String(value ?? '');
+            return node.innerHTML;
+        }
+
+        function updateAuthButton() {
+            document.getElementById('authButton').textContent = session ? `👤 ${session.user.name}` : '👤 Ingresar';
+        }
+
+        async function openAuth() {
+            if (session) {
+                if (confirm('¿Quieres cerrar la sesión actual?')) {
+                    session = null;
+                    sessionStorage.removeItem('skillhubSession');
+                    updateAuthButton();
+                }
+                return;
+            }
+            const action = (prompt('Escribe “entrar” o “registrar”:', 'entrar') || '').toLowerCase();
+            const email = prompt('Correo electrónico:');
+            const password = prompt('Contraseña (mínimo 8 caracteres):');
+            if (!email || !password) return;
+            const isRegister = action.startsWith('r');
+            const payload = { email, password };
+            if (isRegister) {
+                payload.name = prompt('Tu nombre:');
+                payload.role = (prompt('Tipo de cuenta: client o provider', 'client') || 'client').toLowerCase();
+            }
+            try {
+                const response = await fetch(`${API_URL}/api/auth/${isRegister ? 'register' : 'login'}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'No se pudo autenticar');
+                session = data;
+                sessionStorage.setItem('skillhubSession', JSON.stringify(session));
+                updateAuthButton();
+                alert('Sesión iniciada correctamente.');
+            } catch (error) {
+                alert(error.message);
+            }
         }
 
         async function fetchServicesFromAPI() {
@@ -363,19 +411,23 @@
             const grid = document.getElementById('servicesGrid');
             grid.innerHTML = '';
             items.forEach(s => {
-                const cleanName = filterOffensiveContent(s.name);
-                const cleanDesc = filterOffensiveContent(s.desc);
+                const cleanName = escapeHtml(filterOffensiveContent(s.name));
+                const cleanDesc = escapeHtml(filterOffensiveContent(s.desc));
+                const cleanCat = escapeHtml(s.cat || s.category || 'Servicio');
+                const cleanArea = escapeHtml(s.area || 'Remoto');
+                const price = Number(s.price) || 0;
+                const hourly = Number(s.hourly) || 0;
                 grid.innerHTML += `
                     <div class="service-card">
                         <div>
-                            <span style="font-size:0.75rem; background:#e0e7ff; color:#4f46e5; padding:2px 6px; border-radius:4px; font-weight:bold;">${s.cat} - ${s.area || 'Remoto'}</span>
+                            <span style="font-size:0.75rem; background:#e0e7ff; color:#4f46e5; padding:2px 6px; border-radius:4px; font-weight:bold;">${cleanCat} - ${cleanArea}</span>
                             <h4 style="margin-top:6px;">${cleanName}</h4>
                             <p style="font-size:0.85rem; color:gray; margin-top:4px;">${cleanDesc}</p>
                             <div class="rating" style="margin-top:6px;">⭐ ${s.rating || 5.0}</div>
                         </div>
                         <div>
-                            <div class="price">$${s.price} USD <span style="font-size:0.75rem; color:gray;">($${s.hourly || 0}/hr)</span></div>
-                            <button class="btn btn-success" onclick="bookService('${cleanName}')">Reservar / Solicitar</button>
+                            <div class="price">${price.toFixed(2)} USD <span style="font-size:0.75rem; color:gray;">(${hourly.toFixed(2)}/hr)</span></div>
+                            <button class="btn btn-success" onclick="bookService(${Number(s.id)})">Reservar / Solicitar</button>
                         </div>
                     </div>
                 `;
@@ -383,31 +435,9 @@
         }
 
         async function switchTab(tabId, btn) {
-            // Validación segura para Administración mediante la API de Backend
-            if (tabId === 'tab-admin') {
-                const emailInput = prompt("🔐 Ingrese su correo de Administrador:");
-                const passInput = prompt("🔑 Ingrese su contraseña:");
-
-                try {
-                    const res = await fetch(`${API_URL}/api/auth/login`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: emailInput, password: passInput })
-                    });
-                    const data = await res.json();
-
-                    if (!res.ok || data.role !== 'admin') {
-                        alert("❌ Acceso denegado: Credenciales de administrador incorrectas.");
-                        return;
-                    }
-                    alert("✅ ¡Bienvenido, Administrador!");
-                } catch (err) {
-                    // Verificación de respaldo segura
-                    if(emailInput !== "support.hubskill@gmail.com") {
-                        alert("❌ Acceso denegado.");
-                        return;
-                    }
-                }
+            if (tabId === 'tab-admin' && (!session || session.user.role !== 'admin')) {
+                alert('Acceso exclusivo para administradores autenticados.');
+                return;
             }
 
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -430,12 +460,19 @@
             };
 
             try {
-                await fetch(`${API_URL}/api/services`, {
+                if (!session || session.user.role !== 'provider') throw new Error('Inicia sesión como proveedor para publicar.');
+                const response = await fetch(`${API_URL}/api/services`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.token || ''}` },
                     body: JSON.stringify(newS)
                 });
-            } catch (err) { console.log("Guardado en modo local."); }
+                const saved = await response.json();
+                if (!response.ok) throw new Error(saved.error || 'No se pudo publicar');
+                Object.assign(newS, saved);
+            } catch (err) {
+                alert(err.message);
+                return;
+            }
 
             servicesData.unshift(newS);
             renderServices(servicesData);
@@ -464,8 +501,10 @@
             const input = document.getElementById('chatInput');
             if (!input.value.trim()) return;
             const box = document.getElementById('chatBox');
-            const cleanText = filterOffensiveContent(input.value);
-            box.innerHTML += `<div class="msg me">${cleanText}</div>`;
+            const message = document.createElement('div');
+            message.className = 'msg me';
+            message.textContent = filterOffensiveContent(input.value);
+            box.appendChild(message);
             input.value = '';
             box.scrollTop = box.scrollHeight;
         }
@@ -479,9 +518,27 @@
             window.location.href = `mailto:support.hubskill@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent("De: " + email + "\n\n" + msg)}`;
         }
 
-        function bookService(title) {
-            alert(`Solicitud enviada para: ${title}. Selecciona la fecha en el módulo de reservaciones.`);
-            switchTab('tab-bookings', document.querySelectorAll('.nav-item')[2]);
+        async function bookService(serviceId) {
+            if (!session || session.user.role !== 'client') {
+                alert('Inicia sesión como cliente para reservar.');
+                return;
+            }
+            const service = servicesData.find((item) => Number(item.id) === Number(serviceId));
+            const date = prompt('Fecha y hora (ejemplo: 2026-09-15T10:00):');
+            if (!service || !date) return;
+            try {
+                const response = await fetch(`${API_URL}/api/bookings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.token}` },
+                    body: JSON.stringify({ serviceId: Number(service.id), date })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'No se pudo reservar');
+                alert('Reserva creada correctamente.');
+                switchTab('tab-bookings', document.querySelectorAll('.nav-item')[2]);
+            } catch (error) {
+                alert(error.message);
+            }
         }
 
         function toggleDarkMode() {
@@ -489,6 +546,7 @@
         }
 
         // Carga Inicial de la Aplicación
+        updateAuthButton();
         fetchServicesFromAPI();
     </script>
 </body>
