@@ -298,17 +298,8 @@
     <section id="tab-admin" class="tab-content">
         <div class="card">
             <h3>⚙️ Panel Administrativo</h3>
-            <div class="stats-grid" style="margin-top: 10px;">
-                <div class="stat-box"><p style="font-size:0.75rem;">Usuarios</p><strong>1,240</strong></div>
-                <div class="stat-box"><p style="font-size:0.75rem;">Proveedores</p><strong>310</strong></div>
-                <div class="stat-box"><p style="font-size:0.75rem;">Comisiones</p><strong>$1,120</strong></div>
-            </div>
-            <h4 style="margin-top: 16px; margin-bottom: 8px;">Acciones de Control</h4>
-            <div style="display:flex; flex-direction:column; gap:8px;">
-                <button class="btn btn-secondary" onclick="alert('Desplegando lista completa de proveedores para aprobar/rechazar...')">Aprobar / Rechazar Proveedores</button>
-                <button class="btn btn-secondary" onclick="alert('Revisando reportes de usuarios...')">Gestionar Disputas y Reportes</button>
-                <button class="btn btn-danger" onclick="alert('Usuario suspendido del sistema.')">Suspender / Bloquear Cuenta</button>
-            </div>
+            <p class="service-meta" style="margin-top:10px;">El panel administrativo ahora usa datos reales del backend.</p>
+            <button class="btn" style="margin-top:12px;" onclick="window.location.href='/admin'">Abrir panel administrativo real</button>
         </div>
     </section>
 
@@ -467,7 +458,7 @@
         <button class="nav-item" onclick="switchTab('tab-dashboard', this)">
             <span>📊</span>Panel
         </button>
-        <button id="adminNav" class="nav-item" onclick="switchTab('tab-admin', this)" hidden>
+        <button id="adminNav" class="nav-item" onclick="window.location.href='/admin'" hidden>
             <span>⚙️</span>Admin
         </button>
         <button class="nav-item" onclick="switchTab('tab-support', this)">
