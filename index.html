@@ -322,7 +322,6 @@
             </div>
             <div id="registerFields" hidden>
                 <div class="form-group"><label for="authName">Nombre</label><input id="authName" type="text" maxlength="80" autocomplete="name"></div>
-                <div class="form-group"><label for="authRole">Tipo de cuenta</label><select id="authRole"><option value="client">Cliente</option><option value="provider">Proveedor</option></select></div>
             </div>
             <div class="form-group"><label for="authEmail">Correo electrónico</label><input id="authEmail" type="email" required autocomplete="email"></div>
             <div class="form-group"><label for="authPassword">Contraseña</label><input id="authPassword" type="password" minlength="8" maxlength="128" required autocomplete="current-password"></div>
@@ -406,7 +405,7 @@
             if (session) {
                 document.getElementById('accountName').textContent = session.user.name;
                 document.getElementById('accountEmail').textContent = session.user.email;
-                document.getElementById('accountRole').textContent = session.user.role === 'provider' ? 'Cuenta de proveedor' : session.user.role === 'admin' ? 'Cuenta administrativa' : 'Cuenta de cliente';
+                document.getElementById('accountRole').textContent = session.user.role === 'admin' ? 'Cuenta administrativa' : 'Cuenta de SkillHub';
                 document.getElementById('accountDialog').showModal();
                 return;
             }
@@ -439,7 +438,6 @@
             };
             if (isRegister) {
                 payload.name = document.getElementById('authName').value.trim();
-                payload.role = document.getElementById('authRole').value;
             }
             const errorBox = document.getElementById('authError');
             const submit = document.getElementById('authSubmit');
@@ -532,7 +530,7 @@
             };
 
             try {
-                if (!session || session.user.role !== 'provider') throw new Error('Inicia sesión como proveedor para publicar.');
+                if (!session || session.user.role === 'admin') throw new Error('Inicia sesión para publicar.');
                 const response = await fetch(`${API_URL}/api/services`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.token || ''}` },
@@ -591,8 +589,8 @@
         }
 
         async function bookService(serviceId) {
-            if (!session || session.user.role !== 'client') {
-                alert('Inicia sesión como cliente para reservar.');
+            if (!session || session.user.role === 'admin') {
+                alert('Inicia sesión para reservar.');
                 return;
             }
             const service = servicesData.find((item) => Number(item.id) === Number(serviceId));
