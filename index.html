@@ -69,6 +69,13 @@
         .msg { background: var(--border); padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 0.9rem; }
         .msg.me { align-self: flex-end; background: var(--primary); color: white; }
 
+        dialog { width: min(92vw, 440px); border: 0; border-radius: 14px; padding: 0; background: var(--card-bg); color: var(--text); }
+        dialog::backdrop { background: rgba(15, 23, 42, 0.7); }
+        .dialog-body { padding: 22px; }
+        .dialog-actions { display: flex; gap: 8px; margin-top: 16px; }
+        .dialog-actions .btn { flex: 1; }
+        .form-error { color: var(--danger); min-height: 1.25rem; margin-top: 8px; font-size: 0.85rem; }
+
         /* Review Stars */
         .rating { color: #f59e0b; font-weight: bold; }
     </style>
@@ -303,6 +310,30 @@
         </div>
     </section>
 
+    <dialog id="authDialog">
+        <form class="dialog-body" id="authForm" onsubmit="handleAuthSubmit(event)">
+            <h3>👤 Cuenta de SkillHub</h3>
+            <div class="form-group" style="margin-top:14px;">
+                <label for="authAction">¿Qué quieres hacer?</label>
+                <select id="authAction" onchange="toggleRegisterFields()">
+                    <option value="login">Iniciar sesión</option>
+                    <option value="register">Crear una cuenta</option>
+                </select>
+            </div>
+            <div id="registerFields" hidden>
+                <div class="form-group"><label for="authName">Nombre</label><input id="authName" type="text" maxlength="80" autocomplete="name"></div>
+                <div class="form-group"><label for="authRole">Tipo de cuenta</label><select id="authRole"><option value="client">Cliente</option><option value="provider">Proveedor</option></select></div>
+            </div>
+            <div class="form-group"><label for="authEmail">Correo electrónico</label><input id="authEmail" type="email" required autocomplete="email"></div>
+            <div class="form-group"><label for="authPassword">Contraseña</label><input id="authPassword" type="password" minlength="8" maxlength="128" required autocomplete="current-password"></div>
+            <p id="authError" class="form-error" role="alert"></p>
+            <div class="dialog-actions">
+                <button class="btn btn-secondary" type="button" onclick="document.getElementById('authDialog').close()">Cancelar</button>
+                <button class="btn" id="authSubmit" type="submit">Continuar</button>
+            </div>
+        </form>
+    </dialog>
+
     <!-- Bottom Navigation Bar -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('tab-search', this)">
@@ -358,39 +389,59 @@
             document.getElementById('authButton').textContent = session ? `👤 ${session.user.name}` : '👤 Ingresar';
         }
 
-        async function openAuth() {
+        function openAuth() {
             if (session) {
-                if (confirm('¿Quieres cerrar la sesión actual?')) {
-                    session = null;
-                    sessionStorage.removeItem('skillhubSession');
-                    updateAuthButton();
-                }
+                session = null;
+                sessionStorage.removeItem('skillhubSession');
+                updateAuthButton();
                 return;
             }
-            const action = (prompt('Escribe “entrar” o “registrar”:', 'entrar') || '').toLowerCase();
-            const email = prompt('Correo electrónico:');
-            const password = prompt('Contraseña (mínimo 8 caracteres):');
-            if (!email || !password) return;
-            const isRegister = action.startsWith('r');
-            const payload = { email, password };
+            document.getElementById('authForm').reset();
+            document.getElementById('authError').textContent = '';
+            toggleRegisterFields();
+            document.getElementById('authDialog').showModal();
+        }
+
+        function toggleRegisterFields() {
+            const isRegister = document.getElementById('authAction').value === 'register';
+            document.getElementById('registerFields').hidden = !isRegister;
+            document.getElementById('authName').required = isRegister;
+            document.getElementById('authPassword').autocomplete = isRegister ? 'new-password' : 'current-password';
+        }
+
+        async function handleAuthSubmit(event) {
+            event.preventDefault();
+            const isRegister = document.getElementById('authAction').value === 'register';
+            const payload = {
+                email: document.getElementById('authEmail').value.trim(),
+                password: document.getElementById('authPassword').value
+            };
             if (isRegister) {
-                payload.name = prompt('Tu nombre:');
-                payload.role = (prompt('Tipo de cuenta: client o provider', 'client') || 'client').toLowerCase();
+                payload.name = document.getElementById('authName').value.trim();
+                payload.role = document.getElementById('authRole').value;
             }
+            const errorBox = document.getElementById('authError');
+            const submit = document.getElementById('authSubmit');
+            errorBox.textContent = '';
+            submit.disabled = true;
+            submit.textContent = 'Procesando…';
             try {
                 const response = await fetch(`${API_URL}/api/auth/${isRegister ? 'register' : 'login'}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                const data = await response.json();
+                const data = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(data.error || 'No se pudo autenticar');
                 session = data;
                 sessionStorage.setItem('skillhubSession', JSON.stringify(session));
                 updateAuthButton();
-                alert('Sesión iniciada correctamente.');
+                document.getElementById('authDialog').close();
             } catch (error) {
-                alert(error.message);
+                errorBox.textContent = error.message;
+            } finally {
+                submit.disabled = false;
+                submit.textContent = 'Continuar';
             }
         }
 
