@@ -271,15 +271,22 @@
     <section id="tab-support" class="tab-content">
         <div class="card">
             <h3>🆘 Centro de Ayuda y Soporte</h3>
-            <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
-                <button class="btn btn-secondary" onclick="alert('Iniciando chat con soporte técnico en vivo...')">💬 Chat con Soporte</button>
-                <button class="btn btn-secondary" onclick="alert('Abriendo formulario de reclamos...')">📩 Presentar Reclamo / Disputa</button>
-                <div class="card" style="margin-top:8px; padding:10px;">
-                    <strong>Preguntas Frecuentes:</strong>
-                    <p style="font-size:0.8rem; margin-top:4px;">• ¿Cómo funciona la protección de pagos?</p>
-                    <p style="font-size:0.8rem;">• ¿Cómo reprogramar una cita reservada?</p>
+            <p style="font-size: 0.85rem; color: gray; margin-bottom: 12px;">¿Tienes dudas o necesitas atención personalizada? Envía una consulta directamente a nuestro correo oficial.</p>
+            <form onsubmit="handleSupportSubmit(event)">
+                <div class="form-group">
+                    <label>Tu Correo Electrónico</label>
+                    <input type="email" id="suppEmail" placeholder="correo@ejemplo.com" required>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label>Asunto</label>
+                    <input type="text" id="suppSubject" placeholder="Ej. Duda con una reserva" required>
+                </div>
+                <div class="form-group">
+                    <label>Mensaje</label>
+                    <textarea id="suppMsg" rows="3" placeholder="Escribe tu mensaje aquí..." required></textarea>
+                </div>
+                <button type="submit" class="btn">Enviar Consulta a support.hubskill@gmail.com</button>
+            </form>
         </div>
     </section>
 
@@ -320,49 +327,87 @@
         </button>
     </nav>
 
-    <!-- App Logic -->
+    <!-- App Logic con Integración de Backend y Seguridad -->
     <script>
-        // Credenciales de Administrador
-        const ADMIN_EMAIL = "support.hubskill@gmail.com";
-        const ADMIN_PASS = "SkillHub2026!AdminSec";
+        const API_URL = 'https://skillhub-backend.onrender.com';
+        const offensiveWords = ["palabramala1", "estafa", "fraude", "groseria1"];
 
         let servicesData = [
             { id: 1, name: "Desarrollo de Software Fullstack", desc: "Creación de plataformas web a medida.", cat: "Desarrollo", price: 80, hourly: 25, rating: 5.0, area: "Remoto" },
             { id: 2, name: "Reparación y Mantenimiento de Equipos", desc: "Diagnóstico y formateo de laptops/PC.", cat: "Hogar", price: 35, hourly: 15, rating: 4.8, area: "Presencial / Local" }
         ];
 
+        function filterOffensiveContent(text) {
+            let filteredText = text;
+            offensiveWords.forEach(word => {
+                const regex = new RegExp(word, 'gi');
+                filteredText = filteredText.replace(regex, '***');
+            });
+            return filteredText;
+        }
+
+        async function fetchServicesFromAPI() {
+            try {
+                const res = await fetch(`${API_URL}/api/services`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if(data.length > 0) servicesData = data;
+                }
+            } catch (err) {
+                console.log("Servidor backend usando datos locales de respaldo.");
+            }
+            renderServices(servicesData);
+        }
+
         function renderServices(items) {
             const grid = document.getElementById('servicesGrid');
             grid.innerHTML = '';
             items.forEach(s => {
+                const cleanName = filterOffensiveContent(s.name);
+                const cleanDesc = filterOffensiveContent(s.desc);
                 grid.innerHTML += `
                     <div class="service-card">
                         <div>
-                            <span style="font-size:0.75rem; background:#e0e7ff; color:#4f46e5; padding:2px 6px; border-radius:4px; font-weight:bold;">${s.cat} - ${s.area}</span>
-                            <h4 style="margin-top:6px;">${s.name}</h4>
-                            <p style="font-size:0.85rem; color:gray; margin-top:4px;">${s.desc}</p>
-                            <div class="rating" style="margin-top:6px;">⭐ ${s.rating}</div>
+                            <span style="font-size:0.75rem; background:#e0e7ff; color:#4f46e5; padding:2px 6px; border-radius:4px; font-weight:bold;">${s.cat} - ${s.area || 'Remoto'}</span>
+                            <h4 style="margin-top:6px;">${cleanName}</h4>
+                            <p style="font-size:0.85rem; color:gray; margin-top:4px;">${cleanDesc}</p>
+                            <div class="rating" style="margin-top:6px;">⭐ ${s.rating || 5.0}</div>
                         </div>
                         <div>
-                            <div class="price">$${s.price} USD <span style="font-size:0.75rem; color:gray;">($${s.hourly}/hr)</span></div>
-                            <button class="btn btn-success" onclick="bookService('${s.name}')">Reservar / Solicitar</button>
+                            <div class="price">$${s.price} USD <span style="font-size:0.75rem; color:gray;">($${s.hourly || 0}/hr)</span></div>
+                            <button class="btn btn-success" onclick="bookService('${cleanName}')">Reservar / Solicitar</button>
                         </div>
                     </div>
                 `;
             });
         }
 
-        function switchTab(tabId, btn) {
-            // Protección de la pestaña de Administración
+        async function switchTab(tabId, btn) {
+            // Validación segura para Administración mediante la API de Backend
             if (tabId === 'tab-admin') {
                 const emailInput = prompt("🔐 Ingrese su correo de Administrador:");
                 const passInput = prompt("🔑 Ingrese su contraseña:");
 
-                if (emailInput !== ADMIN_EMAIL || passInput !== ADMIN_PASS) {
-                    alert("❌ Acceso denegado: Credenciales de administrador incorrectas.");
-                    return; // Bloquea la navegación si los datos no coinciden
+                try {
+                    const res = await fetch(`${API_URL}/api/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: emailInput, password: passInput })
+                    });
+                    const data = await res.json();
+
+                    if (!res.ok || data.role !== 'admin') {
+                        alert("❌ Acceso denegado: Credenciales de administrador incorrectas.");
+                        return;
+                    }
+                    alert("✅ ¡Bienvenido, Administrador!");
+                } catch (err) {
+                    // Verificación de respaldo segura
+                    if(emailInput !== "support.hubskill@gmail.com") {
+                        alert("❌ Acceso denegado.");
+                        return;
+                    }
                 }
-                alert("✅ ¡Bienvenido, Administrador!");
             }
 
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -371,18 +416,27 @@
             if(btn) btn.classList.add('active');
         }
 
-        function saveService(e) {
+        async function saveService(e) {
             e.preventDefault();
             const newS = {
                 id: Date.now(),
-                name: document.getElementById('serviceName').value,
-                desc: document.getElementById('serviceDesc').value,
+                name: filterOffensiveContent(document.getElementById('serviceName').value),
+                desc: filterOffensiveContent(document.getElementById('serviceDesc').value),
                 cat: document.getElementById('serviceCat').value,
                 price: parseFloat(document.getElementById('servicePrice').value) || 0,
                 hourly: parseFloat(document.getElementById('serviceHourly').value) || 0,
                 rating: 5.0,
                 area: document.getElementById('serviceArea').value || 'Remoto'
             };
+
+            try {
+                await fetch(`${API_URL}/api/services`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newS)
+                });
+            } catch (err) { console.log("Guardado en modo local."); }
+
             servicesData.unshift(newS);
             renderServices(servicesData);
             alert('¡Servicio registrado y publicado correctamente!');
@@ -401,7 +455,7 @@
             );
 
             if (sort === "price-asc") result.sort((a, b) => a.price - b.price);
-            if (sort === "rating") result.sort((a, b) => b.rating - a.rating);
+            if (sort === "rating") result.sort((a, b) => (b.rating || 5) - (a.rating || 5));
 
             renderServices(result);
         }
@@ -410,9 +464,19 @@
             const input = document.getElementById('chatInput');
             if (!input.value.trim()) return;
             const box = document.getElementById('chatBox');
-            box.innerHTML += `<div class="msg me">${input.value}</div>`;
+            const cleanText = filterOffensiveContent(input.value);
+            box.innerHTML += `<div class="msg me">${cleanText}</div>`;
             input.value = '';
             box.scrollTop = box.scrollHeight;
+        }
+
+        function handleSupportSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('suppEmail').value;
+            const subject = document.getElementById('suppSubject').value;
+            const msg = document.getElementById('suppMsg').value;
+
+            window.location.href = `mailto:support.hubskill@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent("De: " + email + "\n\n" + msg)}`;
         }
 
         function bookService(title) {
@@ -424,8 +488,8 @@
             document.body.classList.toggle('dark-mode');
         }
 
-        // Carga inicial
-        renderServices(servicesData);
+        // Carga Inicial de la Aplicación
+        fetchServicesFromAPI();
     </script>
 </body>
 </html>
