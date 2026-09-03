@@ -1,15 +1,15 @@
 name: Apply public profile redesign
 on:
-  workflow_dispatch:
+  push:
+    branches: [chatgpt/public-profile-redesign]
 permissions:
   contents: write
 jobs:
   patch:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: chatgpt/public-profile-redesign
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -18,9 +18,7 @@ jobs:
         run: |
           from pathlib import Path
           import re
-          p=Path('index.html')
-          s=p.read_text()
-          marker='        /* Review Stars */'
+          p=Path('index.html'); s=p.read_text(); marker='        /* Review Stars */'
           css='''        /* Public provider profile */
         #providerProfileDialog { width:min(94vw,620px); }
         .public-profile-hero { text-align:center; padding:8px 4px 18px; border-bottom:1px solid var(--border); }
@@ -44,48 +42,32 @@ jobs:
         @media (max-width:700px) { .public-profile-avatar{width:82px;height:82px}.profile-service-row{flex-direction:column}.profile-service-price{white-space:normal} }
 
 '''
-          if css.strip() not in s:
-              s=s.replace(marker,css+marker)
+          s=s.replace(marker,css+marker)
           pattern=r"        async function openProviderProfile\(id\) \{.*?\n        \}\n        async function loadReviewOptions"
           replacement='''        async function openProviderProfile(id) {
-            const dialog=document.getElementById('providerProfileDialog');
-            const content=document.getElementById('providerProfileContent');
-            content.innerHTML='<div class="chat-empty">Cargando perfil…</div>';
-            dialog.showModal();
+            const dialog=document.getElementById('providerProfileDialog'),content=document.getElementById('providerProfileContent');
+            content.innerHTML='<div class="chat-empty">Cargando perfil…</div>'; dialog.showModal();
             try {
-                const response=await fetch(`${API_URL}/api/providers/${id}`);
-                const data=await response.json();
+                const response=await fetch(`${API_URL}/api/providers/${id}`),data=await response.json();
                 if(!response.ok) throw new Error(data.error||'No se pudo cargar el perfil');
-                const p=data.profile||{}, services=Array.isArray(data.services)?data.services:[], reviews=Array.isArray(data.reviews)?data.reviews:[];
-                const avatar=p.avatarUrl
-                    ? `<img class="public-profile-avatar" src="${escapeHtml(p.avatarUrl)}" alt="Foto de perfil de ${escapeHtml(p.name)}" onerror="this.outerHTML='<div class=&quot;public-profile-avatar&quot;>👤</div>'">`
-                    : '<div class="public-profile-avatar">👤</div>';
-                const chips=(value)=>String(value||'').split(',').map(x=>x.trim()).filter(Boolean).map(x=>`<span class="profile-chip">${escapeHtml(x)}</span>`).join('');
+                const p=data.profile||{},services=Array.isArray(data.services)?data.services:[],reviews=Array.isArray(data.reviews)?data.reviews:[];
+                const avatar=p.avatarUrl?`<img class="public-profile-avatar" src="${escapeHtml(p.avatarUrl)}" alt="Foto de perfil">`:'<div class="public-profile-avatar">👤</div>';
+                const chips=(v)=>String(v||'').split(',').map(x=>x.trim()).filter(Boolean).map(x=>`<span class="profile-chip">${escapeHtml(x)}</span>`).join('');
                 const serviceCards=services.length?services.map(x=>`<div class="profile-service-card"><div class="profile-service-row"><div><strong>${escapeHtml(x.name)}</strong><p class="service-meta">${escapeHtml(x.area||'Remoto')}</p><p style="margin-top:6px;font-size:.88rem">${escapeHtml(x.desc||'')}</p></div><span class="profile-service-price">$${Number(x.price||0).toFixed(2)}</span></div><button class="btn btn-secondary" style="margin-top:10px" onclick="providerProfileDialog.close();openServiceDialog(${Number(x.id)})">Ver servicio</button></div>`).join(''):'<p class="service-meta">No tiene servicios públicos en este momento.</p>';
                 const reviewCards=reviews.length?reviews.map(r=>`<div class="profile-review"><strong>⭐ ${Number(r.rating||0).toFixed(1)} · ${escapeHtml(r.reviewerName)}</strong><p class="service-meta">${escapeHtml(r.serviceName||'Servicio')}</p><p style="margin-top:6px">${escapeHtml(r.comment||'')}</p></div>`).join(''):'<p class="service-meta">Aún no tiene reseñas.</p>';
-                content.innerHTML=`
-                    <div class="public-profile-hero">${avatar}<h2>${escapeHtml(p.name||'Proveedor de SkillHub')}</h2><p class="public-profile-headline">${escapeHtml(p.headline||'Profesional de SkillHub')}</p><div class="public-profile-badges"><span class="profile-badge profile-rating">⭐ ${Number(p.rating||0).toFixed(1)} · ${Number(p.reviewCount||0)} reseñas</span>${p.location?`<span class="profile-badge">📍 ${escapeHtml(p.location)}</span>`:''}${p.remoteAvailable?'<span class="profile-badge">💻 Disponible remoto</span>':''}</div></div>
-                    <section class="public-profile-section"><h3>Sobre mí</h3><p class="profile-copy">${escapeHtml(p.bio||'Este usuario todavía no ha añadido una biografía.')}</p>${p.portfolioUrl?`<a class="btn btn-secondary profile-portfolio" href="${escapeHtml(p.portfolioUrl)}" target="_blank" rel="noopener noreferrer">🔗 Ver portafolio</a>`:''}</section>
-                    ${p.skills?`<section class="public-profile-section"><h3>Habilidades</h3><div class="profile-chip-list">${chips(p.skills)}</div></section>`:''}
-                    ${p.experience?`<section class="public-profile-section"><h3>Experiencia</h3><p class="profile-copy">${escapeHtml(p.experience)}</p></section>`:''}
-                    ${p.languages?`<section class="public-profile-section"><h3>Idiomas</h3><div class="profile-chip-list">${chips(p.languages)}</div></section>`:''}
-                    <section class="public-profile-section"><h3>🛠️ Servicios</h3>${serviceCards}</section>
-                    <section class="public-profile-section"><h3>⭐ Reseñas</h3>${reviewCards}</section>`;
-            } catch(error) {
-                content.innerHTML=`<div class="chat-empty">${escapeHtml(error.message)}</div>`;
-            }
+                content.innerHTML=`<div class="public-profile-hero">${avatar}<h2>${escapeHtml(p.name||'Proveedor de SkillHub')}</h2><p class="public-profile-headline">${escapeHtml(p.headline||'Profesional de SkillHub')}</p><div class="public-profile-badges"><span class="profile-badge profile-rating">⭐ ${Number(p.rating||0).toFixed(1)} · ${Number(p.reviewCount||0)} reseñas</span>${p.location?`<span class="profile-badge">📍 ${escapeHtml(p.location)}</span>`:''}${p.remoteAvailable?'<span class="profile-badge">💻 Disponible remoto</span>':''}</div></div><section class="public-profile-section"><h3>Sobre mí</h3><p class="profile-copy">${escapeHtml(p.bio||'Este usuario todavía no ha añadido una biografía.')}</p>${p.portfolioUrl?`<a class="btn btn-secondary profile-portfolio" href="${escapeHtml(p.portfolioUrl)}" target="_blank" rel="noopener noreferrer">🔗 Ver portafolio</a>`:''}</section>${p.skills?`<section class="public-profile-section"><h3>Habilidades</h3><div class="profile-chip-list">${chips(p.skills)}</div></section>`:''}${p.experience?`<section class="public-profile-section"><h3>Experiencia</h3><p class="profile-copy">${escapeHtml(p.experience)}</p></section>`:''}${p.languages?`<section class="public-profile-section"><h3>Idiomas</h3><div class="profile-chip-list">${chips(p.languages)}</div></section>`:''}<section class="public-profile-section"><h3>🛠️ Servicios</h3>${serviceCards}</section><section class="public-profile-section"><h3>⭐ Reseñas</h3>${reviewCards}</section>`;
+            } catch(error) { content.innerHTML=`<div class="chat-empty">${escapeHtml(error.message)}</div>`; }
         }
         async function loadReviewOptions'''
-          s2,n=re.subn(pattern,replacement,s,flags=re.S)
+          s,n=re.subn(pattern,replacement,s,flags=re.S)
           if n!=1: raise SystemExit(f'Expected one profile function, found {n}')
-          p.write_text(s2)
+          p.write_text(s)
       - name: Validate JavaScript
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
-          s=Path('index.html').read_text()
-          scripts=re.findall(r'<script>(.*?)</script>',s,re.S)
+          s=Path('index.html').read_text(); scripts=re.findall(r'<script>(.*?)</script>',s,re.S)
           Path('/tmp/skillhub.js').write_text('\n'.join(scripts))
           PY
           node --check /tmp/skillhub.js
