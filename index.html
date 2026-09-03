@@ -24,6 +24,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        html, body { max-width: 100%; overflow-x: hidden; }
         body { background-color: var(--bg); color: var(--text); padding-bottom: 75px; transition: background 0.3s; }
 
         /* Header Navigation */
@@ -54,14 +55,18 @@
         .service-actions { display:flex; gap:8px; margin-top:12px; }
         .service-actions .btn { flex:1; }
         .service-meta { color:#64748b; font-size:0.82rem; margin-top:6px; }
+        .form-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+        .my-service { border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:8px; }
+        .status-ready { color:var(--success); font-weight:700; }
+        .status-waiting { color:#d97706; font-weight:700; }
         .dialog-price { color:var(--success); font-size:1.3rem; font-weight:800; margin:12px 0; }
 
         .service-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
         .price { font-size: 1.2rem; font-weight: 700; color: var(--success); margin: 8px 0; }
 
         /* Navigation Bar */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000; overflow-x: auto; }
-        .nav-item { background: none; border: none; color: var(--text); font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; cursor: pointer; opacity: 0.7; min-width: 60px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000; overflow-x: hidden; }
+        .nav-item { background: none; border: none; color: var(--text); font-size: 0.7rem; display: flex; flex: 1 1 0; min-width: 0; flex-direction: column; align-items: center; cursor: pointer; opacity: 0.7; }
         .nav-item.active { opacity: 1; color: var(--primary); font-weight: bold; }
         .nav-item span { font-size: 1.2rem; }
 
@@ -100,8 +105,11 @@
             .card { padding: 15px; border-radius: 10px; }
             .grid { grid-template-columns: 1fr; }
             input, select, textarea, .btn { min-height: 44px; font-size: 1rem; }
-            .bottom-nav { justify-content: flex-start; gap: 2px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
-            .nav-item { flex: 0 0 72px; min-height: 54px; font-size: 0.75rem; }
+            .bottom-nav { justify-content: space-around; gap: 0; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+            .nav-item { flex: 1 1 0; min-width: 0; min-height: 54px; font-size: 0.72rem; }
+            .form-row { grid-template-columns:1fr; }
+            .nav-container, .tab-content, .card { min-width:0; max-width:100%; }
+            #tab-search .card > div > div { flex-wrap:wrap; }
             dialog { width: 100vw; max-width: none; margin: auto 0 0; border-radius: 18px 18px 0 0; max-height: 92vh; overflow:auto; }
             .dialog-body { padding: 20px 16px max(20px, env(safe-area-inset-bottom)); }
             .dialog-actions { flex-direction: column-reverse; }
@@ -158,75 +166,36 @@
         <div class="grid" id="servicesGrid"></div>
     </main>
 
-    <!-- 2. CREAR / EDITAR SERVICIO (PROVEEDOR) -->
+    <!-- 2. SERVICIOS, DISPONIBILIDAD Y RESERVAS -->
     <section id="tab-publish" class="tab-content">
         <div class="card">
-            <h3>🛠️ Publicar Servicio</h3>
-            <form id="serviceForm" onsubmit="saveService(event)">
-                <div class="form-group">
-                    <label>Nombre del servicio</label>
-                    <input type="text" id="serviceName" required placeholder="Ej: Reparación de Computadoras a Domicilio">
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea id="serviceDesc" rows="3" required placeholder="Detalla lo que incluye tu servicio..."></textarea>
-                </div>
-                <div class="form-group" style="display: flex; gap: 8px;">
-                    <div style="flex:1;">
-                        <label>Categoría</label>
-                        <select id="serviceCat">
-                            <option value="Desarrollo">Desarrollo</option>
-                            <option value="Hogar">Hogar</option>
-                            <option value="Educación">Educación</option>
-                        </select>
-                    </div>
-                    <div style="flex:1;">
-                        <label>Tipo de Servicio</label>
-                        <select id="serviceType">
-                            <option value="Remoto">Remoto</option>
-                            <option value="Presencial">Presencial</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group" style="display: flex; gap: 8px;">
-                    <div style="flex:1;">
-                        <label>Precio Fijo ($)</label>
-                        <input type="number" id="servicePrice" placeholder="50.00">
-                    </div>
-                    <div style="flex:1;">
-                        <label>Precio por Hora ($)</label>
-                        <input type="number" id="serviceHourly" placeholder="15.00">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Ubicación / Área de Cobertura</label>
-                    <input type="text" id="serviceArea" placeholder="Ej: Ciudad de México / Remoto Global">
-                </div>
-                <button type="submit" class="btn">Guardar y Publicar Servicio</button>
+            <h3 id="serviceFormTitle">🛠️ Crear servicio</h3>
+            <p class="service-meta">Puedes crear hasta 5 servicios nuevos cada 24 horas. Editarlos después no consume otro espacio.</p>
+            <p id="serviceLimitStatus" class="service-meta"></p>
+            <form id="serviceForm" onsubmit="saveService(event)" style="margin-top:12px;">
+                <div class="form-group"><label>Nombre del servicio</label><input type="text" id="serviceName" required maxlength="120" placeholder="Ej: Reparación de computadoras"></div>
+                <div class="form-group"><label>Descripción del servicio</label><textarea id="serviceDesc" rows="3" minlength="10" maxlength="1000" required placeholder="Explica qué incluye tu servicio..."></textarea></div>
+                <div class="form-row"><div class="form-group"><label>Categoría</label><select id="serviceCat"><option value="Desarrollo">Desarrollo</option><option value="Hogar">Hogar</option><option value="Educación">Educación</option></select></div><div class="form-group"><label>Tipo</label><select id="serviceType"><option value="Remoto">Remoto</option><option value="Presencial">Presencial</option></select></div></div>
+                <div class="form-row"><div class="form-group"><label>Precio fijo ($)</label><input type="number" min="0" step="0.01" id="servicePrice" placeholder="50.00"></div><div class="form-group"><label>Precio por hora ($)</label><input type="number" min="0" step="0.01" id="serviceHourly" placeholder="15.00"></div></div>
+                <div class="form-group"><label>Ubicación / área</label><input type="text" id="serviceArea" maxlength="150" placeholder="Ej: Bronx, NY / Remoto"></div>
+                <div class="dialog-actions"><button id="cancelServiceEdit" class="btn btn-secondary" type="button" onclick="cancelServiceEdit()" hidden>Cancelar edición</button><button id="serviceSubmitButton" type="submit" class="btn">Guardar servicio</button></div>
+                <p id="serviceFormStatus" class="form-error" role="status"></p>
             </form>
+            <h4 style="margin-top:20px;">Mis servicios</h4><div id="myServicesList"><div class="chat-empty">Inicia sesión para administrar tus servicios.</div></div>
         </div>
-    </section>
-
-    <!-- 3. RESERVACIONES Y CALENDARIO -->
-    <section id="tab-bookings" class="tab-content">
         <div class="card">
-            <h3>🗓️ Mi disponibilidad</h3>
-            <p class="service-meta">Añade horarios a los servicios que publicaste.</p>
+            <h3>🗓️ Disponibilidad</h3>
+            <p class="service-meta"><strong>Obligatorio:</strong> un servicio necesita al menos un horario futuro disponible para aparecer en el marketplace y aceptar reservas.</p>
+            <p class="service-meta">Elige la fecha y la hora exacta que quieras. También puedes escribir la duración en minutos.</p>
             <form onsubmit="addAvailability(event)" style="margin-top:12px;">
                 <div class="form-group"><label for="availabilityService">Servicio</label><select id="availabilityService" required></select></div>
-                <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
-                    <div class="form-group"><label for="availabilityStart">Fecha y hora</label><input id="availabilityStart" type="datetime-local" required></div>
-                    <div class="form-group"><label for="availabilityDuration">Duración</label><select id="availabilityDuration"><option value="30">30 min</option><option value="60" selected>1 hora</option><option value="90">1.5 horas</option><option value="120">2 horas</option></select></div>
-                </div>
-                <button class="btn" type="submit">Añadir horario</button>
+                <div class="form-row"><div class="form-group"><label for="availabilityStart">Fecha y hora exacta</label><input id="availabilityStart" type="datetime-local" step="60" required></div><div class="form-group"><label for="availabilityDuration">Duración (minutos)</label><input id="availabilityDuration" type="number" min="15" max="480" step="5" value="60" required></div></div>
+                <div class="dialog-actions"><button id="cancelAvailabilityEdit" class="btn btn-secondary" type="button" onclick="cancelAvailabilityEdit()" hidden>Cancelar edición</button><button id="availabilitySubmitButton" class="btn" type="submit">Añadir horario</button></div>
                 <p id="availabilityStatus" class="form-error" role="status"></p>
             </form>
             <div id="availabilityList"></div>
         </div>
-        <div class="card">
-            <h3>📅 Mis reservaciones</h3>
-            <div id="bookingsList" style="margin-top:12px;"><div class="chat-empty">Inicia sesión para ver tus reservaciones.</div></div>
-        </div>
+        <div class="card"><h3>📅 Reservas</h3><div id="bookingsList" style="margin-top:12px;"><div class="chat-empty">Inicia sesión para ver tus reservaciones.</div></div></div>
     </section>
 
     <!-- 4. COMUNICACIÓN Y CHAT -->
@@ -249,31 +218,11 @@
         </div>
     </section>
 
-    <!-- 5. PANEL DE PROVEEDOR & CLIENTE -->
+    <!-- 5. AYUDA, CUENTA Y SEGURIDAD -->
     <section id="tab-dashboard" class="tab-content">
-        <div class="card">
-            <h3>💼 Panel del Vendedor</h3>
-            <p class="service-meta" style="margin-top:10px;">Tus servicios, disponibilidad y reservas se muestran con datos reales del backend.</p>
-            <button class="btn" style="margin-top:12px;" onclick="switchTab('tab-bookings', document.querySelectorAll('.nav-item')[2])">Ver mis reservas y disponibilidad</button>
-            <p class="service-meta" style="margin-top:10px;">Los pagos y retiros reales todavía no están activados durante la beta.</p>
-        </div>
-
-        <div class="card">
-            <h3>👤 Panel del Cliente</h3>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <p><strong>Servicios Reservados Activos:</strong> 1</p>
-                <p><strong>Historial de Servicios Completados:</strong> 4</p>
-                <button class="btn btn-secondary" onclick="switchTab('tab-reviews')">⭐ Dejar Reseña y Calificar</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>🛡️ Centro de Seguridad</h3>
-            <div id="verificationStatus" class="stats-grid" style="margin-top:12px;"></div>
-            <button id="verifyButton" class="btn" style="margin-top:12px;" onclick="requestVerification()">Solicitar verificación</button>
-            <h4 style="margin-top:18px;">Mis reportes y disputas</h4>
-            <div id="caseHistory" style="margin-top:8px;"></div>
-        </div>
+        <div class="card"><h3>🧭 Ayuda y cuenta</h3><p class="service-meta">Administra tu perfil, reseñas, seguridad y soporte desde un solo lugar.</p><div class="dialog-actions"><button class="btn btn-secondary" type="button" onclick="openProfileEditor()">✏️ Editar perfil y biografía</button><button class="btn" type="button" onclick="switchTab('tab-reviews')">⭐ Reseñas</button></div></div>
+        <div class="card"><h3>🛡️ Seguridad</h3><div id="verificationStatus" class="stats-grid" style="margin-top:12px;"></div><button id="verifyButton" class="btn" style="margin-top:12px;" onclick="requestVerification()">Solicitar verificación</button><h4 style="margin-top:18px;">Mis reportes y disputas</h4><div id="caseHistory" style="margin-top:8px;"></div></div>
+        <div class="card"><h3>🆘 Soporte</h3><p class="service-meta" style="margin-bottom:12px;">¿Tienes una duda o problema? Envía una consulta al equipo de SkillHub.</p><form onsubmit="handleSupportSubmit(event)"><div class="form-group"><label>Tu correo electrónico</label><input type="email" id="suppEmail" required></div><div class="form-group"><label>Asunto</label><input type="text" id="suppSubject" required></div><div class="form-group"><label>Mensaje</label><textarea id="suppMsg" rows="3" required></textarea></div><button type="submit" class="btn">Contactar soporte</button></form></div>
     </section>
 
     <!-- 6. RESEÑAS -->
@@ -297,29 +246,6 @@
             <h3>⚙️ Panel Administrativo</h3>
             <p class="service-meta" style="margin-top:10px;">El panel administrativo ahora usa datos reales del backend.</p>
             <button class="btn" style="margin-top:12px;" onclick="window.location.href='/admin'">Abrir panel administrativo real</button>
-        </div>
-    </section>
-
-    <!-- 8. SOPORTE Y AYUDA -->
-    <section id="tab-support" class="tab-content">
-        <div class="card">
-            <h3>🆘 Centro de Ayuda y Soporte</h3>
-            <p style="font-size: 0.85rem; color: gray; margin-bottom: 12px;">¿Tienes dudas o necesitas atención personalizada? Envía una consulta directamente a nuestro correo oficial.</p>
-            <form onsubmit="handleSupportSubmit(event)">
-                <div class="form-group">
-                    <label>Tu Correo Electrónico</label>
-                    <input type="email" id="suppEmail" placeholder="correo@ejemplo.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Asunto</label>
-                    <input type="text" id="suppSubject" placeholder="Ej. Duda con una reserva" required>
-                </div>
-                <div class="form-group">
-                    <label>Mensaje</label>
-                    <textarea id="suppMsg" rows="3" placeholder="Escribe tu mensaje aquí..." required></textarea>
-                </div>
-                <button type="submit" class="btn">Enviar Consulta a support.hubskill@gmail.com</button>
-            </form>
         </div>
     </section>
 
@@ -438,27 +364,11 @@
 
     <!-- Bottom Navigation Bar -->
     <nav class="bottom-nav">
-        <button class="nav-item active" onclick="switchTab('tab-search', this)">
-            <span>🔍</span>Buscar
-        </button>
-        <button class="nav-item" onclick="switchTab('tab-publish', this)">
-            <span>🛠️</span>Servicios
-        </button>
-        <button class="nav-item" onclick="switchTab('tab-bookings', this)">
-            <span>📅</span>Reservas
-        </button>
-        <button class="nav-item" onclick="switchTab('tab-chat', this)">
-            <span>💬</span>Chat
-        </button>
-        <button class="nav-item" onclick="switchTab('tab-dashboard', this)">
-            <span>📊</span>Panel
-        </button>
-        <button id="adminNav" class="nav-item" onclick="window.location.href='/admin'" hidden>
-            <span>⚙️</span>Admin
-        </button>
-        <button class="nav-item" onclick="switchTab('tab-support', this)">
-            <span>🆘</span>Soporte
-        </button>
+        <button class="nav-item active" data-tab="tab-search" onclick="switchTab('tab-search', this)"><span>🔍</span>Buscar</button>
+        <button class="nav-item" data-tab="tab-publish" onclick="switchTab('tab-publish', this)"><span>🛠️</span>Servicios</button>
+        <button class="nav-item" data-tab="tab-chat" onclick="switchTab('tab-chat', this)"><span>💬</span>Chat</button>
+        <button class="nav-item" data-tab="tab-dashboard" onclick="switchTab('tab-dashboard', this)"><span>🧭</span>Ayuda</button>
+        <button id="adminNav" class="nav-item" onclick="window.location.href='/admin'" hidden><span>⚙️</span>Admin</button>
     </nav>
 
     <!-- App Logic con Integración de Backend y Seguridad -->
@@ -471,6 +381,10 @@
         const offensiveWords = ["palabramala1", "estafa", "fraude", "groseria1"];
 
         let servicesData = [];
+        let myServicesData = [];
+        let myAvailabilityData = [];
+        let editingServiceId = null;
+        let editingAvailabilityId = null;
 
         function filterOffensiveContent(text) {
             let filteredText = text;
@@ -606,55 +520,25 @@
         }
 
         async function switchTab(tabId, btn) {
-            if (tabId === 'tab-admin' && (!session || session.user.role !== 'admin')) {
-                alert('Acceso exclusivo para administradores autenticados.');
-                return;
-            }
-
+            if (tabId === 'tab-admin' && (!session || session.user.role !== 'admin')) return;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             if (tabId === 'tab-chat') loadConversations();
-            if (tabId === 'tab-bookings') loadCalendar();
+            if (tabId === 'tab-publish') { await loadMyServices(); await loadCalendar(); }
             if (tabId === 'tab-reviews') loadReviewOptions();
             if (tabId === 'tab-dashboard') loadSecurityCenter();
             if(btn) btn.classList.add('active');
         }
 
-        async function saveService(e) {
-            e.preventDefault();
-            const newS = {
-                id: Date.now(),
-                name: filterOffensiveContent(document.getElementById('serviceName').value),
-                desc: filterOffensiveContent(document.getElementById('serviceDesc').value),
-                cat: document.getElementById('serviceCat').value,
-                price: parseFloat(document.getElementById('servicePrice').value) || 0,
-                hourly: parseFloat(document.getElementById('serviceHourly').value) || 0,
-                rating: 5.0,
-                area: document.getElementById('serviceArea').value || 'Remoto'
-            };
-
-            try {
-                if (!session || session.user.role === 'admin') throw new Error('Inicia sesión para publicar.');
-                const response = await fetch(`${API_URL}/api/services`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.token || ''}` },
-                    body: JSON.stringify(newS)
-                });
-                const saved = await response.json();
-                if (!response.ok) throw new Error(saved.error || 'No se pudo publicar');
-                Object.assign(newS, saved);
-            } catch (err) {
-                alert(err.message);
-                return;
-            }
-
-            servicesData.unshift(newS);
-            renderServices(servicesData);
-            alert('¡Servicio registrado y publicado correctamente!');
-            document.getElementById('serviceForm').reset();
-            switchTab('tab-search', document.querySelectorAll('.nav-item')[0]);
+        async function loadMyServices() {
+            const list=document.getElementById('myServicesList'),limit=document.getElementById('serviceLimitStatus');
+            if(!session || session.user.role==='admin'){myServicesData=[];list.innerHTML='<div class="chat-empty">Inicia sesión para administrar tus servicios.</div>';limit.textContent='';return;}
+            try{const r=await fetch(`${API_URL}/api/services/me`,{headers:{'Authorization':`Bearer ${session.token}`}});const data=await r.json();if(!r.ok)throw new Error(data.error||'No se pudieron cargar tus servicios');myServicesData=data.services||[];limit.textContent=`Publicaciones nuevas en las últimas 24 h: ${data.limit?.used||0}/5 · Te quedan ${data.limit?.remaining??5}.`;list.innerHTML=myServicesData.length?myServicesData.map(x=>`<div class="my-service"><div><strong>${escapeHtml(x.name)}</strong><p class="service-meta">${escapeHtml(x.cat||'')} · ${escapeHtml(x.type||'')} · ${Number(x.price||0).toFixed(2)} USD</p><p class="${x.hasAvailability?'status-ready':'status-waiting'}">${x.hasAvailability?'✓ Visible y listo para reservas':'⚠ Falta añadir disponibilidad para publicarlo'}</p></div><button class="btn btn-secondary" style="margin-top:8px" onclick="editService(${Number(x.id)})">Editar servicio</button></div>`).join(''):'<div class="chat-empty">Todavía no has creado servicios.</div>';}catch(e){list.innerHTML=`<div class="chat-empty">${escapeHtml(e.message)}</div>`;}
         }
+        function editService(id){const x=myServicesData.find(v=>Number(v.id)===Number(id));if(!x)return;editingServiceId=Number(id);serviceName.value=x.name||'';serviceDesc.value=x.desc||'';serviceCat.value=x.cat||'Desarrollo';serviceType.value=x.type||'Remoto';servicePrice.value=x.price??0;serviceHourly.value=x.hourly??0;serviceArea.value=x.area||'';serviceFormTitle.textContent='✏️ Editar servicio';serviceSubmitButton.textContent='Guardar cambios';cancelServiceEdit.hidden=false;serviceForm.scrollIntoView({behavior:'smooth',block:'start'});}
+        function cancelServiceEdit(){editingServiceId=null;serviceForm.reset();serviceFormTitle.textContent='🛠️ Crear servicio';serviceSubmitButton.textContent='Guardar servicio';cancelServiceEdit.hidden=true;serviceFormStatus.textContent='';}
+        async function saveService(e){e.preventDefault();const payload={name:filterOffensiveContent(serviceName.value),desc:filterOffensiveContent(serviceDesc.value),cat:serviceCat.value,type:serviceType.value,price:Number(servicePrice.value||0),hourly:Number(serviceHourly.value||0),area:serviceArea.value.trim()||'Remoto'};const status=document.getElementById('serviceFormStatus');status.textContent='';try{if(!session||session.user.role==='admin')throw new Error('Inicia sesión para guardar servicios.');const isEdit=Boolean(editingServiceId);const r=await fetch(`${API_URL}/api/services${isEdit?'/'+editingServiceId:''}`,{method:isEdit?'PATCH':'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.token}`},body:JSON.stringify(payload)});const data=await r.json();if(!r.ok)throw new Error(data.error||'No se pudo guardar');const newId=data.id;cancelServiceEdit();await loadMyServices();await loadCalendar();await fetchServicesFromAPI();status.style.color='var(--success)';status.textContent=isEdit?'Cambios guardados.':'Servicio guardado. Ahora añade al menos un horario para que aparezca en el marketplace.';if(!isEdit&&newId){availabilityService.value=String(newId);availabilityStart.focus();}}catch(err){status.style.color='var(--danger)';status.textContent=err.message;}}
 
         function filterServices() {
             const query = document.getElementById('searchInput').value.toLowerCase();
@@ -839,62 +723,27 @@
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(data.error || 'No se pudo reservar');
                 document.getElementById('serviceDialog').close();
-                switchTab('tab-bookings', document.querySelectorAll('.nav-item')[2]);
+                switchTab('tab-publish', document.querySelector('.nav-item[data-tab="tab-publish"]'));
             } catch (error) {
                 document.getElementById('serviceDialogStatus').textContent = error.message;
             }
         }
 
         async function loadCalendar() {
-            const serviceSelect = document.getElementById('availabilityService');
-            const list = document.getElementById('availabilityList');
-            const bookings = document.getElementById('bookingsList');
-            if (!session || session.user.role === 'admin') {
-                serviceSelect.innerHTML = '<option value="">Inicia sesión</option>';
-                list.innerHTML = '';
-                bookings.innerHTML = '<div class="chat-empty">Inicia sesión para ver tus reservaciones.</div>';
-                return;
-            }
-            const owned = servicesData.filter((service) => String(service.providerId) === String(session.user.id));
-            serviceSelect.innerHTML = '<option value="">Selecciona un servicio</option>';
-            owned.forEach((service) => serviceSelect.add(new Option(service.name, service.id)));
-            try {
-                const headers = { 'Authorization': `Bearer ${session.token}` };
-                const [slotsResponse, bookingsResponse] = await Promise.all([
-                    fetch(`${API_URL}/api/availability/me`, { headers }),
-                    fetch(`${API_URL}/api/bookings/me`, { headers })
-                ]);
-                const slots = await slotsResponse.json();
-                const rows = await bookingsResponse.json();
-                list.innerHTML = slots.length ? slots.map((slot) => `<div class="card" style="padding:12px;margin-top:8px;"><strong>${escapeHtml(slot.serviceName)}</strong><p class="service-meta">${new Date(slot.startsAt).toLocaleString()} · ${slot.durationMinutes} min · ${slot.available ? 'Disponible' : 'Reservado'}</p>${slot.available ? `<button class="btn btn-danger" style="margin-top:8px" onclick="deleteAvailability(${slot.id})">Eliminar horario</button>` : ''}</div>`).join('') : '<div class="chat-empty">No has añadido horarios.</div>';
-                bookings.innerHTML = rows.length ? rows.map((item) => `<div class="card" style="padding:12px;"><strong>${escapeHtml(item.serviceName)}</strong><p class="service-meta">${new Date(item.date).toLocaleString()} · ${escapeHtml(item.status)} · ${item.perspective === 'provider' ? 'Te contrataron' : 'Tu reservación'}</p><button class="btn btn-danger" style="margin-top:8px" onclick="openDisputeDialog(${item.id})">Abrir disputa</button>${item.perspective==='provider'&&item.status!=='completed'&&item.status!=='cancelled'?`<button class="btn btn-success" style="margin-top:8px" onclick="updateBookingStatus(${item.id},'completed')">Marcar completado</button>`:''}${item.perspective==='client'&&item.status==='completed'?`<button class="btn" style="margin-top:8px" onclick="switchTab('tab-reviews')">Dejar reseña</button>`:''}</div>`).join('') : '<div class="chat-empty">Aún no tienes reservaciones.</div>';
-            } catch (error) {
-                document.getElementById('availabilityStatus').textContent = error.message;
-            }
+            const serviceSelect=document.getElementById('availabilityService'),list=document.getElementById('availabilityList'),bookings=document.getElementById('bookingsList');
+            if(!session||session.user.role==='admin'){serviceSelect.innerHTML='<option value="">Inicia sesión</option>';list.innerHTML='';bookings.innerHTML='<div class="chat-empty">Inicia sesión para ver tus reservaciones.</div>';return;}
+            if(!myServicesData.length)await loadMyServices();serviceSelect.innerHTML='<option value="">Selecciona un servicio</option>';myServicesData.filter(x=>x.active!==false).forEach(x=>serviceSelect.add(new Option(x.name,x.id)));
+            try{const headers={'Authorization':`Bearer ${session.token}`};const[sr,br]=await Promise.all([fetch(`${API_URL}/api/availability/me`,{headers}),fetch(`${API_URL}/api/bookings/me`,{headers})]);const slots=await sr.json(),rows=await br.json();if(!sr.ok)throw new Error(slots.error||'No se pudo cargar la disponibilidad');if(!br.ok)throw new Error(rows.error||'No se pudieron cargar las reservas');myAvailabilityData=slots;list.innerHTML=slots.length?slots.map(x=>`<div class="card" style="padding:12px;margin-top:8px;"><strong>${escapeHtml(x.serviceName)}</strong><p class="service-meta">${new Date(x.startsAt).toLocaleString()} · ${x.durationMinutes} min · ${x.available?'Disponible':'Reservado'}</p>${x.available?`<div class="dialog-actions"><button class="btn btn-secondary" onclick="editAvailability(${x.id})">Editar</button><button class="btn btn-danger" onclick="deleteAvailability(${x.id})">Eliminar</button></div>`:''}</div>`).join(''):'<div class="chat-empty">No has añadido horarios.</div>';bookings.innerHTML=rows.length?rows.map(item=>`<div class="card" style="padding:12px;"><strong>${escapeHtml(item.serviceName)}</strong><p class="service-meta">${new Date(item.date).toLocaleString()} · ${escapeHtml(item.status)} · ${item.perspective==='provider'?'Te contrataron':'Tu reservación'}</p><button class="btn btn-danger" style="margin-top:8px" onclick="openDisputeDialog(${item.id})">Abrir disputa</button>${item.perspective==='provider'&&item.status!=='completed'&&item.status!=='cancelled'?`<button class="btn btn-success" style="margin-top:8px" onclick="updateBookingStatus(${item.id},'completed')">Marcar completado</button>`:''}${item.perspective==='client'&&item.status==='completed'?`<button class="btn" style="margin-top:8px" onclick="switchTab('tab-reviews')">Dejar reseña</button>`:''}</div>`).join(''):'<div class="chat-empty">Aún no tienes reservaciones.</div>';}catch(error){availabilityStatus.textContent=error.message;}
         }
+        function toLocalInputValue(value){const d=new Date(value),pad=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+        function editAvailability(id){const x=myAvailabilityData.find(v=>Number(v.id)===Number(id));if(!x)return;editingAvailabilityId=Number(id);availabilityService.value=String(x.serviceId);availabilityService.disabled=true;availabilityStart.value=toLocalInputValue(x.startsAt);availabilityDuration.value=x.durationMinutes;availabilitySubmitButton.textContent='Guardar horario';cancelAvailabilityEdit.hidden=false;availabilityStart.focus();}
+        function cancelAvailabilityEdit(){editingAvailabilityId=null;availabilityService.disabled=false;availabilityStart.value='';availabilityDuration.value='60';availabilitySubmitButton.textContent='Añadir horario';cancelAvailabilityEdit.hidden=true;availabilityStatus.textContent='';}
 
-        async function addAvailability(event) {
-            event.preventDefault();
-            const status = document.getElementById('availabilityStatus');
-            const startsAt = document.getElementById('availabilityStart').value;
-            try {
-                const response = await fetch(`${API_URL}/api/availability`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.token}` },
-                    body: JSON.stringify({ serviceId: Number(document.getElementById('availabilityService').value), startsAt: new Date(startsAt).toISOString(), durationMinutes: Number(document.getElementById('availabilityDuration').value) })
-                });
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) throw new Error(data.error || 'No se pudo añadir el horario');
-                status.style.color = 'var(--success)';
-                status.textContent = 'Horario añadido.';
-                event.target.reset();
-                await loadCalendar();
-            } catch (error) { status.textContent = error.message; }
-        }
+        async function addAvailability(event){event.preventDefault();const status=document.getElementById('availabilityStatus'),startsAt=availabilityStart.value,duration=Number(availabilityDuration.value),serviceId=Number(availabilityService.value);try{if(!startsAt)throw new Error('Elige una fecha y hora.');const isEdit=Boolean(editingAvailabilityId);const r=await fetch(`${API_URL}/api/availability${isEdit?'/'+editingAvailabilityId:''}`,{method:isEdit?'PATCH':'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.token}`},body:JSON.stringify({serviceId,startsAt:new Date(startsAt).toISOString(),durationMinutes:duration})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'No se pudo guardar el horario');cancelAvailabilityEdit();await loadCalendar();await loadMyServices();await fetchServicesFromAPI();status.style.color='var(--success)';status.textContent=isEdit?'Horario actualizado.':'Horario añadido. El servicio ya puede aparecer para reservas.';}catch(error){status.style.color='var(--danger)';status.textContent=error.message;}}
 
         async function deleteAvailability(id) {
-            const response = await fetch(`${API_URL}/api/availability/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${session.token}` } });
-            if (response.ok) loadCalendar();
+            const response=await fetch(`${API_URL}/api/availability/${id}`,{method:'DELETE',headers:{'Authorization':`Bearer ${session.token}`}});
+            if(response.ok){await loadCalendar();await loadMyServices();await fetchServicesFromAPI();}
         }
 
         async function openProfileEditor() {
