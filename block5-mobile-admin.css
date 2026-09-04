@@ -1,0 +1,22 @@
+/* Block 5 mobile + admin hardening */
+@media(max-width:760px){
+  body{overflow-x:hidden}
+  dialog{width:min(96vw,560px);max-height:92vh}
+  .dialog-body,.detail-body{padding:16px}
+  .dialog-actions{padding:14px 16px;flex-direction:column-reverse}
+  .dialog-actions .btn{width:100%;min-height:44px}
+  .row.filters{align-items:stretch}
+  .row.filters input,.row.filters select,.row.filters .btn{width:100%;min-height:44px}
+  .item,.card{overflow-wrap:anywhere}
+  .case-actions,.booking-actions,.service-actions,.chat-safety-actions{display:grid!important;grid-template-columns:1fr!important;width:100%}
+  .case-actions .btn,.booking-actions .btn,.service-actions .btn,.chat-safety-actions button{width:100%;min-height:44px}
+  .age-privacy-row{grid-template-columns:1fr!important}
+  .chat-safety-bar{align-items:stretch!important;flex-direction:column!important}
+  #messagesLayout{min-width:0}
+  #conversationList,#chatBox{max-width:100%}
+}
+.admin-safety-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.admin-safety-box{border:1px solid var(--border,#e2e8f0);border-radius:12px;padding:13px;background:var(--card,#fff)}
+.admin-safety-box strong{display:block;margin-bottom:5px}.admin-safety-box span{font-size:.88rem;color:var(--muted,#64748b)}
+.admin-youth-badge{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:.78rem;font-weight:800;margin-left:6px}
+@media(max-width:760px){.admin-safety-summary{grid-template-columns:1fr}}
