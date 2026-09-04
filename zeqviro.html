@@ -35,14 +35,120 @@
         const profileReplacement = profileNeedle + "const completionValues=[p.headline,p.bio,p.skills,p.experience,p.languages,p.location,p.portfolioUrl,p.avatarUrl,p.remoteAvailable?'yes':''];const profilePercent=Math.min(100,10+(completionValues.filter(v=>String(v||'').trim()).length*10));";
         html = html.replace(profileNeedle, profileReplacement);
 
+        const emailField = '<div class="form-group"><label for="authEmail">Correo electrónico</label><input id="authEmail" type="email" required autocomplete="email"></div>';
+        const verifiedEmailField = '<div class="form-group"><label for="authEmail">Correo electrónico</label><input id="authEmail" type="email" required autocomplete="email" oninput="resetRegistrationVerification()"></div><div id="registrationVerificationArea" hidden><p class="service-meta" style="margin-bottom:8px;">Por seguridad, debes verificar que este correo te pertenece antes de crear la cuenta.</p><button class="btn btn-secondary" id="sendRegistrationCodeButton" type="button" onclick="sendRegistrationVerificationCode()">Enviar código al correo</button><div id="registrationCodeArea" hidden style="margin-top:10px;"><div class="form-group"><label for="registrationCode">Código de 6 dígitos</label><input id="registrationCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div><button class="btn btn-success" type="button" onclick="confirmRegistrationVerificationCode()">Verificar correo</button></div><p id="registrationVerificationStatus" class="form-error" role="status"></p></div>';
+        html = html.replace(emailField, verifiedEmailField);
+
+        const oldToggle = `function toggleRegisterFields() {
+            const isRegister = document.getElementById('authAction').value === 'register';
+            document.getElementById('registerFields').hidden = !isRegister;
+            document.getElementById('authName').required = isRegister;
+            document.getElementById('authPassword').autocomplete = isRegister ? 'new-password' : 'current-password';
+        }`;
+        const newToggle = `function toggleRegisterFields() {
+            const isRegister = document.getElementById('authAction').value === 'register';
+            document.getElementById('registerFields').hidden = !isRegister;
+            document.getElementById('registrationVerificationArea').hidden = !isRegister;
+            document.getElementById('authName').required = isRegister;
+            document.getElementById('authPassword').autocomplete = isRegister ? 'new-password' : 'current-password';
+            if (!isRegister) resetRegistrationVerification();
+        }`;
+        html = html.replace(oldToggle, newToggle);
+
+        const registrationHelpers = `let registrationVerificationToken = '';
+
+        function resetRegistrationVerification() {
+            registrationVerificationToken = '';
+            const codeArea = document.getElementById('registrationCodeArea');
+            const codeInput = document.getElementById('registrationCode');
+            const status = document.getElementById('registrationVerificationStatus');
+            if (codeArea) codeArea.hidden = true;
+            if (codeInput) codeInput.value = '';
+            if (status) { status.textContent = ''; status.style.color = 'var(--text)'; }
+        }
+
+        async function sendRegistrationVerificationCode() {
+            const email = document.getElementById('authEmail').value.trim();
+            const status = document.getElementById('registrationVerificationStatus');
+            const button = document.getElementById('sendRegistrationCodeButton');
+            registrationVerificationToken = '';
+            if (!email) { status.style.color = 'var(--danger)'; status.textContent = 'Escribe tu correo primero.'; return; }
+            button.disabled = true;
+            status.style.color = 'var(--text)';
+            status.textContent = 'Enviando código…';
+            try {
+                const response = await fetch(API_URL + '/api/auth/register/email/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'No se pudo enviar el código');
+                document.getElementById('registrationCodeArea').hidden = false;
+                status.style.color = 'var(--success)';
+                status.textContent = data.message || 'Código enviado. Revisa tu correo.';
+                document.getElementById('registrationCode').focus();
+            } catch (error) {
+                status.style.color = 'var(--danger)';
+                status.textContent = error.message;
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function confirmRegistrationVerificationCode() {
+            const email = document.getElementById('authEmail').value.trim();
+            const code = document.getElementById('registrationCode').value.trim();
+            const status = document.getElementById('registrationVerificationStatus');
+            if (!/^\\d{6}$/.test(code)) { status.style.color = 'var(--danger)'; status.textContent = 'Escribe el código de 6 dígitos.'; return; }
+            status.style.color = 'var(--text)';
+            status.textContent = 'Verificando…';
+            try {
+                const response = await fetch(API_URL + '/api/auth/register/email/confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, code })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'No se pudo verificar el correo');
+                registrationVerificationToken = data.verificationToken || '';
+                if (!registrationVerificationToken) throw new Error('No se pudo completar la verificación.');
+                status.style.color = 'var(--success)';
+                status.textContent = '✓ Correo verificado. Ya puedes crear tu cuenta.';
+                document.getElementById('registrationCodeArea').hidden = true;
+                document.getElementById('sendRegistrationCodeButton').textContent = 'Correo verificado ✓';
+            } catch (error) {
+                registrationVerificationToken = '';
+                status.style.color = 'var(--danger)';
+                status.textContent = error.message;
+            }
+        }
+
+        `;
+        html = html.replace('        async function handleAuthSubmit(event) {', '        ' + registrationHelpers + 'async function handleAuthSubmit(event) {');
+
+        const namePayloadNeedle = `if (isRegister) {
+                payload.name = document.getElementById('authName').value.trim();
+            }`;
+        const namePayloadReplacement = `if (isRegister) {
+                payload.name = document.getElementById('authName').value.trim();
+                if (!registrationVerificationToken) {
+                    document.getElementById('authError').textContent = 'Verifica tu correo antes de crear la cuenta.';
+                    return;
+                }
+                payload.verificationToken = registrationVerificationToken;
+            }`;
+        html = html.replace(namePayloadNeedle, namePayloadReplacement);
+
         const brandCss = `<style>
           .logo{letter-spacing:-.025em;font-weight:900!important}.logo::after{content:' · servicios';font-size:.68rem;font-weight:650;color:#64748b;margin-left:6px}
           .zeqviro-trust{max-width:1000px;margin:12px auto 0;padding:0 16px}.zeqviro-trust-inner{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card-bg);color:#64748b;font-size:.78rem}.zeqviro-trust b{color:var(--text)}
+          #registrationVerificationArea{margin:4px 0 12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
           @media(max-width:700px){.logo::after{display:none}.zeqviro-trust{margin-top:8px;padding:0 10px}.zeqviro-trust-inner{justify-content:flex-start}}
         </style>`;
         html = html.replace('</head>', brandCss + '</head>');
 
-        const trustBar = `<div class="zeqviro-trust"><div class="zeqviro-trust-inner"><b>Zeqviro Beta</b><span>✓ Servicios y perfiles</span><span>✓ Reservas y chat</span><span>Pagos reales todavía desactivados</span></div></div>`;
+        const trustBar = `<div class="zeqviro-trust"><div class="zeqviro-trust-inner"><b>Zeqviro Beta</b><span>✓ Servicios y perfiles</span><span>✓ Reservas y chat</span><span>✓ Correo verificado al registrarse</span><span>Pagos reales todavía desactivados</span></div></div>`;
         html = html.replace('</header>', '</header>' + trustBar);
 
         document.open();
