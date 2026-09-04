@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zeqviro · Marketplace de servicios</title>
+  <meta name="description" content="Zeqviro conecta personas que necesitan servicios con profesionales que pueden ayudarlas.">
+  <meta name="theme-color" content="#4f46e5">
+  <style>html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,sans-serif;background:#f8fafc;color:#1e293b}.boot{min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center}.boot strong{font-size:1.35rem}.boot p{color:#64748b}</style>
+</head>
+<body>
+  <div class="boot" id="boot"><div><strong>Zeqviro</strong><p>Cargando…</p></div></div>
+  <script>
+    (async () => {
+      try {
+        const response = await fetch('/index.html?zeqviro_source=1', { cache: 'no-store' });
+        if (!response.ok) throw new Error('No se pudo cargar la aplicación');
+        let html = await response.text();
+
+        // Public-facing rebrand while legacy internal identifiers remain stable.
+        html = html.replaceAll('SkillHub', 'Zeqviro');
+
+        // Fix the public-profile completion badge without changing the backend contract.
+        const profileNeedle = "const p=data.profile||{},services=Array.isArray(data.services)?data.services:[],reviews=Array.isArray(data.reviews)?data.reviews:[];";
+        const profileReplacement = profileNeedle + "const completionValues=[p.headline,p.bio,p.skills,p.experience,p.languages,p.location,p.portfolioUrl,p.avatarUrl,p.remoteAvailable?'yes':''];const profilePercent=Math.min(100,10+(completionValues.filter(v=>String(v||'').trim()).length*10));";
+        html = html.replace(profileNeedle, profileReplacement);
+
+        document.open();
+        document.write(html);
+        document.close();
+      } catch (error) {
+        document.getElementById('boot').innerHTML = '<div><strong>Zeqviro</strong><p>No se pudo cargar la aplicación. Intenta actualizar la página.</p></div>';
+        console.error(error);
+      }
+    })();
+  </script>
+</body>
+</html>

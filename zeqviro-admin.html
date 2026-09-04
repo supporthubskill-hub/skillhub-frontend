@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zeqviro Admin</title>
+  <meta name="theme-color" content="#4f46e5">
+  <style>html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,sans-serif;background:#f8fafc;color:#1e293b}.boot{min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center}.boot strong{font-size:1.35rem}.boot p{color:#64748b}</style>
+</head>
+<body>
+  <div class="boot" id="boot"><div><strong>Zeqviro Admin</strong><p>Cargando…</p></div></div>
+  <script>
+    (async () => {
+      try {
+        const response = await fetch('/admin.html?zeqviro_source=1', { cache: 'no-store' });
+        if (!response.ok) throw new Error('No se pudo cargar el panel');
+        let html = await response.text();
+        html = html.replaceAll('SkillHub', 'Zeqviro');
+        document.open();
+        document.write(html);
+        document.close();
+      } catch (error) {
+        document.getElementById('boot').innerHTML = '<div><strong>Zeqviro Admin</strong><p>No se pudo cargar el panel. Intenta actualizar la página.</p></div>';
+        console.error(error);
+      }
+    })();
+  </script>
+</body>
+</html>

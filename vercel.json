@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/", "destination": "/zeqviro.html" },
+    { "source": "/admin", "destination": "/zeqviro-admin.html" }
   ]
 }
