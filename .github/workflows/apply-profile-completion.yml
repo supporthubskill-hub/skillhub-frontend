@@ -1,0 +1,39 @@
+name: Apply profile completion update
+on:
+  push:
+    branches:
+      - chatgpt/public-profile-redesign
+    paths:
+      - scripts/add_profile_completion.py
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/public-profile-redesign
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply profile completion patch
+        run: python scripts/add_profile_completion.py
+      - name: Validate JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          scripts=re.findall(r'<script>(.*?)</script>',s,re.S)
+          Path('/tmp/skillhub.js').write_text('\n'.join(scripts))
+          PY
+          node --check /tmp/skillhub.js
+      - name: Commit final change and cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-profile-completion.yml scripts/add_profile_completion.py
+          git add index.html
+          git commit -m "Add optional profile completion guidance"
+          git push
