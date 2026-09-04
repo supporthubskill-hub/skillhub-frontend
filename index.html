@@ -117,6 +117,37 @@
             .stats-grid { grid-template-columns: 1fr 1fr; }
         }
 
+        /* Profile completion */
+        .profile-progress-card { margin:14px 0 18px; padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--bg); }
+        .profile-progress-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+        .profile-progress-track { height:10px; border-radius:999px; background:var(--border); overflow:hidden; }
+        .profile-progress-fill { height:100%; width:10%; border-radius:999px; background:var(--primary); transition:width .25s ease; }
+        .profile-suggestions { margin-top:10px; font-size:.82rem; color:#64748b; line-height:1.5; }
+        .profile-optional { font-size:.74rem; color:#64748b; font-weight:500; }
+        .profile-photo-note { margin-top:6px; font-size:.78rem; color:#64748b; line-height:1.4; }
+
+        /* Public provider profile */
+        #providerProfileDialog { width:min(94vw,620px); }
+        .public-profile-hero { text-align:center; padding:8px 4px 18px; border-bottom:1px solid var(--border); }
+        .public-profile-avatar { width:92px; height:92px; border-radius:50%; object-fit:cover; border:4px solid var(--card-bg); box-shadow:0 8px 24px rgba(15,23,42,.14); background:var(--bg); display:inline-flex; align-items:center; justify-content:center; font-size:2.7rem; }
+        .public-profile-hero h2 { margin-top:10px; font-size:1.55rem; }
+        .public-profile-headline { margin-top:4px; color:#64748b; font-weight:650; }
+        .public-profile-badges { display:flex; flex-wrap:wrap; justify-content:center; gap:7px; margin-top:12px; }
+        .profile-badge { padding:6px 9px; border-radius:999px; background:var(--bg); border:1px solid var(--border); font-size:.78rem; font-weight:650; }
+        .profile-rating { color:#b45309; }
+        .public-profile-section { padding-top:18px; }
+        .public-profile-section h3 { margin-bottom:9px; }
+        .profile-copy { line-height:1.55; white-space:pre-wrap; }
+        .profile-chip-list { display:flex; flex-wrap:wrap; gap:7px; }
+        .profile-chip { padding:6px 9px; border-radius:8px; background:var(--bg); border:1px solid var(--border); font-size:.82rem; }
+        .profile-service-card { border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:8px; }
+        .profile-service-row { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+        .profile-service-price { color:var(--success); font-weight:800; white-space:nowrap; }
+        .profile-review { border-top:1px solid var(--border); padding:12px 0; }
+        .profile-review:first-of-type { border-top:0; }
+        .profile-portfolio { display:inline-block; margin-top:12px; text-decoration:none; }
+        @media (max-width:700px) { .public-profile-avatar{width:82px;height:82px}.profile-service-row{flex-direction:column}.profile-service-price{white-space:normal} }
+
         /* Review Stars */
         .rating { color: #f59e0b; font-weight: bold; }
     </style>
@@ -222,18 +253,23 @@
     <section id="tab-profile" class="tab-content">
         <div class="card">
             <h3>👤 Mi perfil</h3>
-            <p class="service-meta">Mantén tu información actualizada para que otros usuarios sepan más sobre ti.</p>
+            <p class="service-meta">Completar tu perfil es opcional, pero un perfil más completo ayuda a que otros usuarios conozcan mejor tu experiencia.</p>
             <div id="profilePageLogin" class="chat-empty">Inicia sesión para administrar tu perfil.</div>
             <form id="profilePageForm" onsubmit="saveProfilePage(event)" hidden style="margin-top:14px;">
+                <div class="profile-progress-card">
+                    <div class="profile-progress-head"><strong>Perfil completado</strong><strong id="profileCompletionText">10%</strong></div>
+                    <div class="profile-progress-track" aria-hidden="true"><div id="profileCompletionFill" class="profile-progress-fill"></div></div>
+                    <p id="profileCompletionSuggestions" class="profile-suggestions">Añade información para mejorar tu perfil público.</p>
+                </div>
                 <div class="form-group"><label>Nombre de la cuenta</label><input id="profilePageName" disabled></div>
-                <div class="form-group"><label>Título profesional</label><input id="profilePageHeadline" maxlength="100" placeholder="Ej: Técnico de computadoras"></div>
-                <div class="form-group"><label>Biografía</label><textarea id="profilePageBio" rows="4" maxlength="600" placeholder="Cuéntales a los demás quién eres y qué experiencia tienes..."></textarea></div>
-                <div class="form-group"><label>Habilidades</label><input id="profilePageSkills" maxlength="300" placeholder="Ej: JavaScript, reparación, limpieza"></div>
-                <div class="form-group"><label>Experiencia</label><textarea id="profilePageExperience" rows="3" maxlength="600" placeholder="Describe brevemente tu experiencia"></textarea></div>
-                <div class="form-row"><div class="form-group"><label>Idiomas</label><input id="profilePageLanguages" maxlength="200" placeholder="Ej: Español, inglés"></div><div class="form-group"><label>Ciudad o área</label><input id="profilePageLocation" maxlength="100" placeholder="Ej: Bronx, NY"></div></div>
-                <div class="form-group"><label>Portafolio</label><input id="profilePagePortfolio" type="url" maxlength="500" placeholder="https://..."></div>
-                <div class="form-group"><label>Foto de perfil (URL https)</label><input id="profilePageAvatar" type="url" maxlength="500" placeholder="https://..."></div>
-                <label style="display:flex;align-items:center;gap:8px;"><input id="profilePageRemote" type="checkbox" style="width:auto" checked> Disponible para trabajos remotos</label>
+                <div class="form-group"><label>Título profesional <span class="profile-optional">(opcional)</span></label><input id="profilePageHeadline" maxlength="100" placeholder="Ej: Técnico de computadoras" oninput="updateProfileCompletion()"></div>
+                <div class="form-group"><label>Biografía <span class="profile-optional">(opcional)</span></label><textarea id="profilePageBio" rows="4" maxlength="600" placeholder="Cuéntales a los demás quién eres y qué experiencia tienes..." oninput="updateProfileCompletion()"></textarea></div>
+                <div class="form-group"><label>Habilidades <span class="profile-optional">(opcional)</span></label><input id="profilePageSkills" maxlength="300" placeholder="Ej: JavaScript, reparación, limpieza" oninput="updateProfileCompletion()"></div>
+                <div class="form-group"><label>Experiencia <span class="profile-optional">(opcional)</span></label><textarea id="profilePageExperience" rows="3" maxlength="600" placeholder="Describe brevemente tu experiencia" oninput="updateProfileCompletion()"></textarea></div>
+                <div class="form-row"><div class="form-group"><label>Idiomas <span class="profile-optional">(opcional)</span></label><input id="profilePageLanguages" maxlength="200" placeholder="Ej: Español, inglés" oninput="updateProfileCompletion()"></div><div class="form-group"><label>Ciudad o área <span class="profile-optional">(opcional)</span></label><input id="profilePageLocation" maxlength="100" placeholder="Ej: Bronx, NY" oninput="updateProfileCompletion()"></div></div>
+                <div class="form-group"><label>Portafolio <span class="profile-optional">(opcional)</span></label><input id="profilePagePortfolio" type="url" maxlength="500" placeholder="https://..." oninput="updateProfileCompletion()"></div>
+                <div class="form-group"><label>Foto de perfil (URL https) <span class="profile-optional">(opcional)</span></label><input id="profilePageAvatar" type="url" maxlength="500" placeholder="https://..." oninput="updateProfileCompletion()"><p class="profile-photo-note">Usa una foto apropiada y profesional. Las imágenes que violen las reglas de SkillHub pueden ser retiradas o reportadas.</p></div>
+                <label style="display:flex;align-items:center;gap:8px;"><input id="profilePageRemote" type="checkbox" style="width:auto" checked onchange="updateProfileCompletion()"> Disponible para trabajos remotos</label>
                 <button class="btn" type="submit" style="margin-top:14px;">Guardar perfil</button>
                 <p id="profilePageStatus" class="form-error" role="status"></p>
             </form>
@@ -770,13 +806,22 @@
             if(response.ok){await loadCalendar();await loadMyServices();await fetchServicesFromAPI();}
         }
 
+        function updateProfileCompletion() {
+            const fields=[['Título profesional',profilePageHeadline?.value],['Biografía',profilePageBio?.value],['Habilidades',profilePageSkills?.value],['Experiencia',profilePageExperience?.value],['Idiomas',profilePageLanguages?.value],['Ciudad o área',profilePageLocation?.value],['Portafolio',profilePagePortfolio?.value],['Foto de perfil',profilePageAvatar?.value],['Disponibilidad remota',profilePageRemote?.checked?'sí':'']];
+            const completed=fields.filter(([,v])=>String(v||'').trim()).length;
+            const percent=Math.min(100,10+(completed*10));
+            const text=document.getElementById('profileCompletionText'),fill=document.getElementById('profileCompletionFill'),suggestions=document.getElementById('profileCompletionSuggestions');
+            if(text)text.textContent=`${percent}%`; if(fill)fill.style.width=`${percent}%`;
+            if(suggestions){const missing=fields.filter(([,v])=>!String(v||'').trim()).map(([label])=>label);suggestions.textContent=percent===100?'Tu perfil está completo. Puedes actualizarlo cuando quieras.':`Sugerencia: completa ${missing.slice(0,3).join(', ')}${missing.length>3?' y otros campos':''}. Nada de esto es obligatorio.`;}
+        }
+
         async function loadProfilePage() {
             const login=document.getElementById('profilePageLogin'),form=document.getElementById('profilePageForm'),status=document.getElementById('profilePageStatus');
             status.textContent='';
             if(!session){login.hidden=false;login.textContent='Inicia sesión para administrar tu perfil.';form.hidden=true;return;}
             if(session.user.role==='admin'){login.hidden=false;login.textContent='La cuenta administrativa se gestiona desde el panel de administración.';form.hidden=true;return;}
             login.hidden=true;form.hidden=false;profilePageName.value=session.user.name||'';
-            try{const response=await fetch(`${API_URL}/api/providers/${session.user.id}`);const data=await response.json();if(!response.ok)throw new Error(data.error||'No se pudo cargar el perfil');const p=data.profile||{};profilePageHeadline.value=p.headline||'';profilePageBio.value=p.bio||'';profilePageSkills.value=p.skills||'';profilePageExperience.value=p.experience||'';profilePageLanguages.value=p.languages||'';profilePageLocation.value=p.location||'';profilePagePortfolio.value=p.portfolioUrl||'';profilePageAvatar.value=p.avatarUrl||'';profilePageRemote.checked=p.remoteAvailable!==false;}catch(e){status.textContent=e.message;}
+            try{const response=await fetch(`${API_URL}/api/providers/${session.user.id}`);const data=await response.json();if(!response.ok)throw new Error(data.error||'No se pudo cargar el perfil');const p=data.profile||{};profilePageHeadline.value=p.headline||'';profilePageBio.value=p.bio||'';profilePageSkills.value=p.skills||'';profilePageExperience.value=p.experience||'';profilePageLanguages.value=p.languages||'';profilePageLocation.value=p.location||'';profilePagePortfolio.value=p.portfolioUrl||'';profilePageAvatar.value=p.avatarUrl||'';profilePageRemote.checked=p.remoteAvailable!==false; updateProfileCompletion();}catch(e){status.textContent=e.message;}
         }
         async function saveProfilePage(event) {
             event.preventDefault();const status=document.getElementById('profilePageStatus');status.textContent='';
@@ -804,11 +849,18 @@
             document.getElementById('profileEditDialog').close();
         }
         async function openProviderProfile(id) {
-            const response=await fetch(`${API_URL}/api/providers/${id}`); const data=await response.json();
-            if(!response.ok) return;
-            const p=data.profile; const avatar=p.avatarUrl?`<img src="${escapeHtml(p.avatarUrl)}" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover">`:'👤';
-            providerProfileContent.innerHTML=`<div style="font-size:2rem">${avatar}</div><h2>${escapeHtml(p.name)}</h2><strong>${escapeHtml(p.headline||'Profesional de SkillHub')}</strong><p class="service-meta">⭐ ${p.rating||0} · ${p.reviewCount||0} reseñas · ${escapeHtml(p.location||'Ubicación no indicada')} ${p.remoteAvailable?'· Remoto':''}</p><p style="margin-top:12px">${escapeHtml(p.bio||'Sin biografía todavía.')}</p><p style="margin-top:12px"><strong>Habilidades:</strong> ${escapeHtml(p.skills||'No indicadas')}</p><p><strong>Experiencia:</strong> ${escapeHtml(p.experience||'No indicada')}</p><p><strong>Idiomas:</strong> ${escapeHtml(p.languages||'No indicados')}</p>${p.portfolioUrl?`<p style="margin-top:10px"><a href="${escapeHtml(p.portfolioUrl)}" target="_blank" rel="noopener">Ver portafolio</a></p>`:''}<h3 style="margin-top:18px">Reseñas</h3>${data.reviews.length?data.reviews.map(r=>`<div class="card"><strong>⭐ ${r.rating} · ${escapeHtml(r.reviewerName)}</strong><p>${escapeHtml(r.comment)}</p></div>`).join(''):'<p class="service-meta">Aún no tiene reseñas.</p>'}`;
-            document.getElementById('providerProfileDialog').showModal();
+            const dialog=document.getElementById('providerProfileDialog'),content=document.getElementById('providerProfileContent');
+            content.innerHTML='<div class="chat-empty">Cargando perfil…</div>'; dialog.showModal();
+            try {
+                const response=await fetch(`${API_URL}/api/providers/${id}`),data=await response.json();
+                if(!response.ok) throw new Error(data.error||'No se pudo cargar el perfil');
+                const p=data.profile||{},services=Array.isArray(data.services)?data.services:[],reviews=Array.isArray(data.reviews)?data.reviews:[];
+                const avatar=p.avatarUrl?`<img class="public-profile-avatar" src="${escapeHtml(p.avatarUrl)}" alt="Foto de perfil">`:'<div class="public-profile-avatar">👤</div>';
+                const chips=(v)=>String(v||'').split(',').map(x=>x.trim()).filter(Boolean).map(x=>`<span class="profile-chip">${escapeHtml(x)}</span>`).join('');
+                const serviceCards=services.length?services.map(x=>`<div class="profile-service-card"><div class="profile-service-row"><div><strong>${escapeHtml(x.name)}</strong><p class="service-meta">${escapeHtml(x.area||'Remoto')}</p><p style="margin-top:6px;font-size:.88rem">${escapeHtml(x.desc||'')}</p></div><span class="profile-service-price">$${Number(x.price||0).toFixed(2)}</span></div><button class="btn btn-secondary" style="margin-top:10px" onclick="providerProfileDialog.close();openServiceDialog(${Number(x.id)})">Ver servicio</button></div>`).join(''):'<p class="service-meta">No tiene servicios públicos en este momento.</p>';
+                const reviewCards=reviews.length?reviews.map(r=>`<div class="profile-review"><strong>⭐ ${Number(r.rating||0).toFixed(1)} · ${escapeHtml(r.reviewerName)}</strong><p class="service-meta">${escapeHtml(r.serviceName||'Servicio')}</p><p style="margin-top:6px">${escapeHtml(r.comment||'')}</p></div>`).join(''):'<p class="service-meta">Aún no tiene reseñas.</p>';
+                content.innerHTML=`<div class="public-profile-hero">${avatar}<h2>${escapeHtml(p.name||'Proveedor de SkillHub')}</h2><p class="public-profile-headline">${escapeHtml(p.headline||'Profesional de SkillHub')}</p><div class="public-profile-badges"><span class="profile-badge profile-rating">⭐ ${Number(p.rating||0).toFixed(1)} · ${Number(p.reviewCount||0)} reseñas</span><span class="profile-badge">📋 Perfil ${profilePercent}% completo</span>${p.location?`<span class="profile-badge">📍 ${escapeHtml(p.location)}</span>`:''}${p.remoteAvailable?'<span class="profile-badge">💻 Disponible remoto</span>':''}</div></div><section class="public-profile-section"><h3>Sobre mí</h3><p class="profile-copy">${escapeHtml(p.bio||'Este usuario todavía no ha añadido una biografía.')}</p>${p.portfolioUrl?`<a class="btn btn-secondary profile-portfolio" href="${escapeHtml(p.portfolioUrl)}" target="_blank" rel="noopener noreferrer">🔗 Ver portafolio</a>`:''}</section>${p.skills?`<section class="public-profile-section"><h3>Habilidades</h3><div class="profile-chip-list">${chips(p.skills)}</div></section>`:''}${p.experience?`<section class="public-profile-section"><h3>Experiencia</h3><p class="profile-copy">${escapeHtml(p.experience)}</p></section>`:''}${p.languages?`<section class="public-profile-section"><h3>Idiomas</h3><div class="profile-chip-list">${chips(p.languages)}</div></section>`:''}<section class="public-profile-section"><h3>🛠️ Servicios</h3>${serviceCards}</section><section class="public-profile-section"><h3>⭐ Reseñas</h3>${reviewCards}</section>`;
+            } catch(error) { content.innerHTML=`<div class="chat-empty">${escapeHtml(error.message)}</div>`; }
         }
         async function loadReviewOptions() {
             const select=document.getElementById('reviewBooking'); select.innerHTML='<option value="">Selecciona una reservación</option>';
