@@ -9,7 +9,7 @@
     const bar=document.createElement('div');
     bar.id='chatSafetyBar';
     bar.className='chat-safety-bar';
-    bar.innerHTML=`<div><strong>🛡️ Chat protegido</strong><span id="chatSafetyCopy">Mantén pagos, acuerdos y conversaciones dentro de Zeqviro.</span></div><div class="chat-safety-actions"><button id="chatReportUser" class="icon-btn" type="button">Reportar</button><button id="chatBlockUser" class="icon-btn chat-block-btn" type="button">Bloquear</button></div>`;
+    bar.innerHTML=`<div><strong>🛡️ Chat protegido</strong><span id="chatSafetyCopy">Mantén acuerdos y conversaciones dentro de Zeqviro. Durante la beta, no envíes pagos externos.</span></div><div class="chat-safety-actions"><button id="chatReportUser" class="icon-btn" type="button">Reportar</button><button id="chatBlockUser" class="icon-btn chat-block-btn" type="button">Bloquear</button></div>`;
     const title=document.getElementById('chatTitle');
     if(title) title.insertAdjacentElement('afterend',bar); else panel.prepend(bar);
     document.getElementById('chatBlockUser')?.addEventListener('click',blockCurrentUser);
