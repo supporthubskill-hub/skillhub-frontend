@@ -39,6 +39,33 @@
         const verifiedEmailField = '<div class="form-group"><label for="authEmail">Correo electrónico</label><input id="authEmail" type="email" required autocomplete="email" oninput="resetRegistrationVerification()"></div><div id="registrationVerificationArea" hidden><p class="service-meta" style="margin-bottom:8px;">Por seguridad, debes verificar que este correo te pertenece antes de crear la cuenta.</p><button class="btn btn-secondary" id="sendRegistrationCodeButton" type="button" onclick="sendRegistrationVerificationCode()">Enviar código al correo</button><div id="registrationCodeArea" hidden style="margin-top:10px;"><div class="form-group"><label for="registrationCode">Código de 6 dígitos</label><input id="registrationCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div><button class="btn btn-success" type="button" onclick="confirmRegistrationVerificationCode()">Verificar correo</button></div><p id="registrationVerificationStatus" class="form-error" role="status"></p></div>';
         html = html.replace(emailField, verifiedEmailField);
 
+        const authActionsNeedle = '<div class="dialog-actions">\n                <button class="btn btn-secondary" type="button" onclick="document.getElementById(\'authDialog\').close()">Cancelar</button>\n                <button class="btn" id="authSubmit" type="submit">Continuar</button>\n            </div>';
+        const authActionsReplacement = '<button id="forgotPasswordLink" class="forgot-password-link" type="button" onclick="openForgotPasswordDialog()">¿Olvidaste tu contraseña?</button>' + authActionsNeedle;
+        html = html.replace(authActionsNeedle, authActionsReplacement);
+
+        const forgotDialog = `<dialog id="forgotPasswordDialog">
+          <div class="dialog-body">
+            <button class="icon-btn" type="button" style="float:right" onclick="closeForgotPasswordDialog()" aria-label="Cerrar">✕</button>
+            <h3>🔐 Restablecer contraseña</h3>
+            <p class="service-meta" style="margin-top:8px;">Usaremos tu correo para confirmar que la cuenta es tuya.</p>
+            <div id="forgotStepEmail" style="margin-top:14px;">
+              <div class="form-group"><label for="forgotEmail">Correo electrónico</label><input id="forgotEmail" type="email" autocomplete="email" placeholder="tu@correo.com"></div>
+              <button id="forgotSendButton" class="btn" type="button" onclick="sendPasswordRecoveryCode()">Enviar código</button>
+            </div>
+            <div id="forgotStepCode" hidden style="margin-top:14px;">
+              <div class="form-group"><label for="forgotCode">Código de 6 dígitos</label><input id="forgotCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div>
+              <div class="dialog-actions"><button class="btn btn-secondary" type="button" onclick="sendPasswordRecoveryCode()">Reenviar</button><button class="btn btn-success" type="button" onclick="confirmPasswordRecoveryCode()">Verificar código</button></div>
+            </div>
+            <div id="forgotStepPassword" hidden style="margin-top:14px;">
+              <div class="form-group"><label for="forgotNewPassword">Nueva contraseña</label><input id="forgotNewPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password"></div>
+              <div class="form-group"><label for="forgotConfirmPassword">Confirmar contraseña</label><input id="forgotConfirmPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password"></div>
+              <button class="btn btn-success" type="button" onclick="resetForgottenPassword()">Guardar nueva contraseña</button>
+            </div>
+            <p id="forgotPasswordStatus" class="form-error" role="status" style="margin-top:10px;"></p>
+          </div>
+        </dialog>`;
+        html = html.replace('<dialog id="serviceDialog">', forgotDialog + '\n\n    <dialog id="serviceDialog">');
+
         const oldToggle = `function toggleRegisterFields() {
             const isRegister = document.getElementById('authAction').value === 'register';
             document.getElementById('registerFields').hidden = !isRegister;
@@ -51,12 +78,16 @@
             document.getElementById('registrationVerificationArea').hidden = !isRegister;
             document.getElementById('authName').required = isRegister;
             document.getElementById('authPassword').autocomplete = isRegister ? 'new-password' : 'current-password';
+            const forgotLink = document.getElementById('forgotPasswordLink');
+            if (forgotLink) forgotLink.hidden = isRegister;
             if (!isRegister) resetRegistrationVerification(true);
         }`;
         html = html.replace(oldToggle, newToggle);
 
         const registrationHelpers = `let registrationVerificationToken = '';
         let registrationVerifiedEmail = '';
+        let passwordResetToken = '';
+        let passwordResetEmail = '';
 
         function resetRegistrationVerification(force = false) {
             const emailInput = document.getElementById('authEmail');
@@ -86,23 +117,15 @@
             status.style.color = 'var(--text)';
             status.textContent = 'Enviando código…';
             try {
-                const response = await fetch(API_URL + '/api/auth/register/email/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
+                const response = await fetch(API_URL + '/api/auth/register/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(data.error || 'No se pudo enviar el código');
                 document.getElementById('registrationCodeArea').hidden = false;
                 status.style.color = 'var(--success)';
                 status.textContent = data.message || 'Código enviado. Revisa tu correo.';
                 document.getElementById('registrationCode').focus();
-            } catch (error) {
-                status.style.color = 'var(--danger)';
-                status.textContent = error.message;
-            } finally {
-                button.disabled = false;
-            }
+            } catch (error) { status.style.color = 'var(--danger)'; status.textContent = error.message; }
+            finally { button.disabled = false; }
         }
 
         async function confirmRegistrationVerificationCode() {
@@ -111,33 +134,100 @@
             const code = document.getElementById('registrationCode').value.trim();
             const status = document.getElementById('registrationVerificationStatus');
             if (!/^\\d{6}$/.test(code)) { status.style.color = 'var(--danger)'; status.textContent = 'Escribe el código de 6 dígitos.'; return; }
-            status.style.color = 'var(--text)';
-            status.textContent = 'Verificando…';
+            status.style.color = 'var(--text)'; status.textContent = 'Verificando…';
             try {
-                const response = await fetch(API_URL + '/api/auth/register/email/confirm', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, code })
-                });
+                const response = await fetch(API_URL + '/api/auth/register/email/confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, code }) });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(data.error || 'No se pudo verificar el correo');
                 registrationVerificationToken = data.verificationToken || '';
                 if (!registrationVerificationToken) throw new Error('No se pudo completar la verificación.');
                 registrationVerifiedEmail = email.toLowerCase();
-                status.style.color = 'var(--success)';
-                status.textContent = '✓ Correo verificado. Ya puedes crear tu cuenta.';
+                status.style.color = 'var(--success)'; status.textContent = '✓ Correo verificado. Ya puedes crear tu cuenta.';
                 document.getElementById('registrationCodeArea').hidden = true;
                 const verifiedButton = document.getElementById('sendRegistrationCodeButton');
-                verifiedButton.textContent = 'Correo verificado ✓';
-                verifiedButton.disabled = true;
-                emailInput.readOnly = true;
+                verifiedButton.textContent = 'Correo verificado ✓'; verifiedButton.disabled = true; emailInput.readOnly = true;
                 document.getElementById('authError').textContent = '';
-            } catch (error) {
-                registrationVerificationToken = '';
-                registrationVerifiedEmail = '';
-                status.style.color = 'var(--danger)';
-                status.textContent = error.message;
-            }
+            } catch (error) { registrationVerificationToken = ''; registrationVerifiedEmail = ''; status.style.color = 'var(--danger)'; status.textContent = error.message; }
+        }
+
+        function openForgotPasswordDialog() {
+            document.getElementById('authDialog').close();
+            passwordResetToken = '';
+            passwordResetEmail = '';
+            const email = document.getElementById('authEmail').value.trim();
+            document.getElementById('forgotEmail').value = email;
+            document.getElementById('forgotCode').value = '';
+            document.getElementById('forgotNewPassword').value = '';
+            document.getElementById('forgotConfirmPassword').value = '';
+            document.getElementById('forgotStepEmail').hidden = false;
+            document.getElementById('forgotStepCode').hidden = true;
+            document.getElementById('forgotStepPassword').hidden = true;
+            document.getElementById('forgotEmail').readOnly = false;
+            document.getElementById('forgotPasswordStatus').textContent = '';
+            document.getElementById('forgotPasswordDialog').showModal();
+        }
+
+        function closeForgotPasswordDialog() {
+            document.getElementById('forgotPasswordDialog').close();
+            document.getElementById('authDialog').showModal();
+        }
+
+        async function sendPasswordRecoveryCode() {
+            const email = document.getElementById('forgotEmail').value.trim();
+            const status = document.getElementById('forgotPasswordStatus');
+            const button = document.getElementById('forgotSendButton');
+            if (!email) { status.style.color = 'var(--danger)'; status.textContent = 'Escribe tu correo.'; return; }
+            button.disabled = true; status.style.color = 'var(--text)'; status.textContent = 'Enviando código…';
+            try {
+                const response = await fetch(API_URL + '/api/auth/password/forgot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'No se pudo enviar el código');
+                passwordResetToken = '';
+                passwordResetEmail = email.toLowerCase();
+                document.getElementById('forgotEmail').readOnly = true;
+                document.getElementById('forgotStepCode').hidden = false;
+                status.style.color = 'var(--success)'; status.textContent = data.message || 'Si existe una cuenta, recibirás un código.';
+                document.getElementById('forgotCode').focus();
+            } catch (error) { status.style.color = 'var(--danger)'; status.textContent = error.message; }
+            finally { button.disabled = false; }
+        }
+
+        async function confirmPasswordRecoveryCode() {
+            const email = passwordResetEmail || document.getElementById('forgotEmail').value.trim().toLowerCase();
+            const code = document.getElementById('forgotCode').value.trim();
+            const status = document.getElementById('forgotPasswordStatus');
+            if (!/^\\d{6}$/.test(code)) { status.style.color = 'var(--danger)'; status.textContent = 'Escribe el código de 6 dígitos.'; return; }
+            status.style.color = 'var(--text)'; status.textContent = 'Verificando…';
+            try {
+                const response = await fetch(API_URL + '/api/auth/password/confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, code }) });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Código incorrecto');
+                passwordResetToken = data.resetToken || '';
+                if (!passwordResetToken) throw new Error('No se pudo completar la verificación.');
+                document.getElementById('forgotStepCode').hidden = true;
+                document.getElementById('forgotStepPassword').hidden = false;
+                status.style.color = 'var(--success)'; status.textContent = '✓ Código confirmado. Crea una contraseña nueva.';
+                document.getElementById('forgotNewPassword').focus();
+            } catch (error) { passwordResetToken = ''; status.style.color = 'var(--danger)'; status.textContent = error.message; }
+        }
+
+        async function resetForgottenPassword() {
+            const password = document.getElementById('forgotNewPassword').value;
+            const confirm = document.getElementById('forgotConfirmPassword').value;
+            const status = document.getElementById('forgotPasswordStatus');
+            if (password.length < 8) { status.style.color = 'var(--danger)'; status.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
+            if (password !== confirm) { status.style.color = 'var(--danger)'; status.textContent = 'Las contraseñas no coinciden.'; return; }
+            if (!passwordResetToken || !passwordResetEmail) { status.style.color = 'var(--danger)'; status.textContent = 'Vuelve a verificar el código.'; return; }
+            status.style.color = 'var(--text)'; status.textContent = 'Guardando nueva contraseña…';
+            try {
+                const response = await fetch(API_URL + '/api/auth/password/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: passwordResetEmail, password, resetToken: passwordResetToken }) });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'No se pudo cambiar la contraseña');
+                status.style.color = 'var(--success)'; status.textContent = '✓ Contraseña actualizada. Ya puedes iniciar sesión.';
+                passwordResetToken = '';
+                document.getElementById('authEmail').value = passwordResetEmail;
+                setTimeout(() => { document.getElementById('forgotPasswordDialog').close(); document.getElementById('authDialog').showModal(); document.getElementById('authPassword').focus(); }, 900);
+            } catch (error) { status.style.color = 'var(--danger)'; status.textContent = error.message; }
         }
 
         `;
@@ -161,6 +251,8 @@
           .logo{letter-spacing:-.025em;font-weight:900!important}.logo::after{content:' · servicios';font-size:.68rem;font-weight:650;color:#64748b;margin-left:6px}
           .zeqviro-trust{max-width:1000px;margin:12px auto 0;padding:0 16px}.zeqviro-trust-inner{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card-bg);color:#64748b;font-size:.78rem}.zeqviro-trust b{color:var(--text)}
           #registrationVerificationArea{margin:4px 0 12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
+          .forgot-password-link{display:block;margin:4px auto 2px;border:0;background:transparent;color:var(--primary);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+          #forgotPasswordDialog .service-meta{line-height:1.45}
           @media(max-width:700px){.logo::after{display:none}.zeqviro-trust{margin-top:8px;padding:0 10px}.zeqviro-trust-inner{justify-content:flex-start}}
         </style>`;
         html = html.replace('</head>', brandCss + '</head>');
