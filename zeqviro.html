@@ -24,7 +24,7 @@
         if (!response.ok) throw new Error('No se pudo cargar Zeqviro');
         let source = await response.text();
         const hook = "        document.open();";
-        const injection = `        html = html.replace('</head>', '<link rel="stylesheet" href="/booking-flow.css?v=1"><link rel="stylesheet" href="/ui-polish.css?v=1"></head>');\n        html = html.replace('</body>', '<script src="/booking-flow.js?v=1"><\\/script><script src="/rejection-controls.js?v=1"><\\/script><script src="/ui-polish.js?v=1"><\\/script></body>');\n        document.open();`;
+        const injection = `        html = html.replace('</head>', '<link rel="stylesheet" href="/booking-flow.css?v=1"><link rel="stylesheet" href="/ui-polish.css?v=1"><link rel="stylesheet" href="/notification-center.css?v=1"></head>');\n        html = html.replace('</body>', '<script src="/booking-flow.js?v=1"><\\/script><script src="/rejection-controls.js?v=1"><\\/script><script src="/ui-polish.js?v=1"><\\/script><script src="/notification-center.js?v=1"><\\/script></body>');\n        document.open();`;
         if (!source.includes(hook)) throw new Error('No se encontró el punto de integración');
         source = source.replace(hook, injection);
         document.open();
