@@ -3,13 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zeqviro · Marketplace de servicios</title>
-  <meta name="description" content="Zeqviro conecta personas que necesitan servicios con profesionales que pueden ayudarlas.">
+  <title>Zeqviro | Servicios cerca de ti y en línea</title>
+  <meta name="description" content="Encuentra, compara y reserva servicios con personas y profesionales en Zeqviro. Publica tus servicios, conversa y gestiona reservas desde un solo lugar.">
   <meta name="theme-color" content="#4f46e5">
-  <style>html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,sans-serif;background:#f8fafc;color:#1e293b}.boot{min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center}.boot strong{font-size:1.35rem}.boot p{color:#64748b}</style>
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://zeqviro.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Zeqviro">
+  <meta property="og:title" content="Zeqviro | Marketplace de servicios">
+  <meta property="og:description" content="Encuentra y ofrece servicios en un solo lugar.">
+  <meta property="og:url" content="https://zeqviro.com/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Zeqviro | Marketplace de servicios">
+  <meta name="twitter:description" content="Encuentra y ofrece servicios en un solo lugar.">
+  <style>html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,sans-serif;background:#f8fafc;color:#1e293b}.boot{min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center}.boot strong{font-size:1.35rem;color:#4f46e5}.boot p{color:#64748b}</style>
 </head>
 <body>
-  <div class="boot" id="boot"><div><strong>Zeqviro</strong><p>Cargando…</p></div></div>
+  <div class="boot" id="boot"><div><strong>Zeqviro</strong><p>Servicios, personas y oportunidades en un solo lugar.</p></div></div>
   <script>
     (async () => {
       try {
@@ -26,10 +36,14 @@
         html = html.replace(profileNeedle, profileReplacement);
 
         const brandCss = `<style>
-          .logo{letter-spacing:-.02em;font-weight:900!important}.logo::after{content:' · servicios';font-size:.68rem;font-weight:650;color:#64748b;margin-left:6px}
-          @media(max-width:700px){.logo::after{display:none}}
+          .logo{letter-spacing:-.025em;font-weight:900!important}.logo::after{content:' · servicios';font-size:.68rem;font-weight:650;color:#64748b;margin-left:6px}
+          .zeqviro-trust{max-width:1000px;margin:12px auto 0;padding:0 16px}.zeqviro-trust-inner{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card-bg);color:#64748b;font-size:.78rem}.zeqviro-trust b{color:var(--text)}
+          @media(max-width:700px){.logo::after{display:none}.zeqviro-trust{margin-top:8px;padding:0 10px}.zeqviro-trust-inner{justify-content:flex-start}}
         </style>`;
         html = html.replace('</head>', brandCss + '</head>');
+
+        const trustBar = `<div class="zeqviro-trust"><div class="zeqviro-trust-inner"><b>Zeqviro Beta</b><span>✓ Servicios y perfiles</span><span>✓ Reservas y chat</span><span>Pagos reales todavía desactivados</span></div></div>`;
+        html = html.replace('</header>', '</header>' + trustBar);
 
         document.open();
         document.write(html);
