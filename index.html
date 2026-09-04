@@ -279,7 +279,7 @@
     <!-- 6. AYUDA Y SEGURIDAD -->
     <section id="tab-dashboard" class="tab-content">
         <div class="card"><h3>🧭 Ayuda</h3><p class="service-meta">Seguridad, reportes, disputas, reseñas y soporte de SkillHub.</p><button class="btn" type="button" style="margin-top:12px" onclick="switchTab('tab-reviews')">⭐ Mis reseñas</button></div>
-        <div class="card"><h3>🛡️ Seguridad</h3><div id="verificationStatus" class="stats-grid" style="margin-top:12px;"></div><button id="verifyButton" class="btn" style="margin-top:12px;" onclick="requestVerification()">Solicitar verificación</button><h4 style="margin-top:18px;">Mis reportes y disputas</h4><div id="caseHistory" style="margin-top:8px;"></div></div>
+        <div class="card"><h3>🛡️ Seguridad</h3><div id="verificationStatus" class="stats-grid" style="margin-top:12px;"></div><div id="emailVerificationActions" style="margin-top:12px;"></div><button id="verifyButton" class="btn" style="margin-top:12px;" onclick="requestVerification()">Solicitar verificación de identidad</button><h4 style="margin-top:18px;">Mis reportes y disputas</h4><div id="caseHistory" style="margin-top:8px;"></div></div>
         <div class="card"><h3>🆘 Soporte</h3><p class="service-meta" style="margin-bottom:12px;">¿Tienes una duda o problema? Envía una consulta al equipo de SkillHub.</p><form onsubmit="handleSupportSubmit(event)"><div class="form-group"><label>Tu correo electrónico</label><input type="email" id="suppEmail" required></div><div class="form-group"><label>Asunto</label><input type="text" id="suppSubject" required></div><div class="form-group"><label>Mensaje</label><textarea id="suppMsg" rows="3" required></textarea></div><button type="submit" class="btn">Contactar soporte</button></form></div>
     </section>
 
@@ -401,6 +401,29 @@
         </div>
     </dialog>
 
+    <dialog id="emailVerificationDialog">
+        <div class="dialog-body">
+            <button class="icon-btn" type="button" style="float:right" onclick="document.getElementById('emailVerificationDialog').close()" aria-label="Cerrar">✕</button>
+            <h3>✉️ Verificar correo</h3>
+            <p class="service-meta" style="margin-top:8px;">Te enviaremos un código de 6 dígitos al correo de tu cuenta. El código vence en 10 minutos.</p>
+            <p id="verificationEmailLabel" style="margin-top:10px;font-weight:700;"></p>
+            <div id="verificationSendArea" style="margin-top:12px;">
+                <button id="sendEmailCodeButton" class="btn" type="button" onclick="sendEmailVerificationCode()">Enviar código</button>
+            </div>
+            <div id="verificationCodeArea" hidden style="margin-top:12px;">
+                <div class="form-group">
+                    <label for="emailVerificationCode">Código de verificación</label>
+                    <input id="emailVerificationCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456">
+                </div>
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" type="button" onclick="sendEmailVerificationCode()">Reenviar código</button>
+                    <button class="btn btn-success" type="button" onclick="confirmEmailVerificationCode()">Verificar correo</button>
+                </div>
+            </div>
+            <p id="emailVerificationStatus" class="form-error" role="status" style="margin-top:10px;"></p>
+        </div>
+    </dialog>
+
     <dialog id="reportDialog">
         <form class="dialog-body" onsubmit="submitReport(event)">
             <h3>⚑ Reportar servicio</h3>
@@ -465,6 +488,90 @@
             document.getElementById('adminNav').hidden = !session || session.user.role !== 'admin';
         }
 
+        function sessionEmailVerified() {
+            return Boolean(session?.user?.emailVerified);
+        }
+
+        async function refreshEmailVerificationStatus() {
+            if (!session || session.user.role === 'admin') return false;
+            try {
+                const response = await fetch(`${API_URL}/api/verification/status`, { headers: { 'Authorization': `Bearer ${session.token}` } });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) return sessionEmailVerified();
+                session.user.emailVerified = Boolean(data.emailVerified);
+                sessionStorage.setItem('skillhubSession', JSON.stringify(session));
+                return session.user.emailVerified;
+            } catch {
+                return sessionEmailVerified();
+            }
+        }
+
+        async function openEmailVerificationDialog() {
+            if (!session || session.user.role === 'admin') return;
+            const verified = await refreshEmailVerificationStatus();
+            const dialog = document.getElementById('emailVerificationDialog');
+            document.getElementById('verificationEmailLabel').textContent = session.user.email || '';
+            document.getElementById('emailVerificationCode').value = '';
+            document.getElementById('emailVerificationStatus').textContent = verified ? '✓ Tu correo ya está verificado.' : '';
+            document.getElementById('verificationSendArea').hidden = verified;
+            document.getElementById('verificationCodeArea').hidden = true;
+            dialog.showModal();
+        }
+
+        async function sendEmailVerificationCode() {
+            if (!session) return;
+            const button = document.getElementById('sendEmailCodeButton');
+            const status = document.getElementById('emailVerificationStatus');
+            if (button) button.disabled = true;
+            status.style.color = 'var(--text)';
+            status.textContent = 'Enviando código…';
+            try {
+                const response = await fetch(`${API_URL}/api/verification/email/send`, { method: 'POST', headers: { 'Authorization': `Bearer ${session.token}` } });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'No se pudo enviar el código');
+                document.getElementById('verificationCodeArea').hidden = false;
+                status.style.color = 'var(--success)';
+                status.textContent = data.message || 'Código enviado. Revisa tu correo.';
+                document.getElementById('emailVerificationCode').focus();
+            } catch (error) {
+                status.style.color = 'var(--danger)';
+                status.textContent = error.message;
+            } finally {
+                if (button) button.disabled = false;
+            }
+        }
+
+        async function confirmEmailVerificationCode() {
+            if (!session) return;
+            const code = document.getElementById('emailVerificationCode').value.trim();
+            const status = document.getElementById('emailVerificationStatus');
+            if (!/^\d{6}$/.test(code)) {
+                status.style.color = 'var(--danger)';
+                status.textContent = 'Escribe el código de 6 dígitos.';
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}/api/verification/email/confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.token}` },
+                    body: JSON.stringify({ code })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'El código no es válido');
+                session.user.emailVerified = true;
+                sessionStorage.setItem('skillhubSession', JSON.stringify(session));
+                status.style.color = 'var(--success)';
+                status.textContent = '✓ Correo verificado correctamente.';
+                document.getElementById('verificationSendArea').hidden = true;
+                document.getElementById('verificationCodeArea').hidden = true;
+                await loadSecurityCenter();
+                setTimeout(() => document.getElementById('emailVerificationDialog').close(), 900);
+            } catch (error) {
+                status.style.color = 'var(--danger)';
+                status.textContent = error.message;
+            }
+        }
+
         function openAuth() {
             if (session) {
                 document.getElementById('accountName').textContent = session.user.name;
@@ -520,6 +627,7 @@
                 sessionStorage.setItem('skillhubSession', JSON.stringify(session));
                 updateAuthButton();
                 document.getElementById('authDialog').close();
+                if (session.user.role !== 'admin') refreshEmailVerificationStatus();
             } catch (error) {
                 errorBox.textContent = error.message;
             } finally {
@@ -768,6 +876,12 @@
                 document.getElementById('serviceDialogStatus').textContent = 'Inicia sesión para reservar.';
                 return;
             }
+            const verified = await refreshEmailVerificationStatus();
+            if (!verified) {
+                const status = document.getElementById('serviceDialogStatus');
+                status.style.color = 'var(--warning)';
+                status.innerHTML = 'Te recomendamos verificar tu correo antes de solicitar este servicio. <button type="button" class="btn btn-secondary" style="margin-left:6px;padding:6px 10px;" onclick="openEmailVerificationDialog()">Verificar correo</button>';
+            }
             const date = document.getElementById('bookingDate').value;
             const notes = document.getElementById('sellerMessage').value.trim();
             if (!date) {
@@ -886,7 +1000,10 @@
                 const [sr,cr]=await Promise.all([fetch(`${API_URL}/api/security/me`,{headers}),fetch(`${API_URL}/api/cases/me`,{headers})]);
                 const sec=await sr.json(),cases=await cr.json();
                 const labels={unverified:'No verificada',pending:'Pendiente',verified:'Verificada',rejected:'Revisión rechazada'};
-                statusBox.innerHTML=`<div class="stat-box"><p>Correo</p><strong>${sec.emailVerified?'Verificado':'No verificado'}</strong></div><div class="stat-box"><p>Teléfono</p><strong>${sec.phoneVerified?'Verificado':'No verificado'}</strong></div><div class="stat-box"><p>Identidad</p><strong>${labels[sec.identityStatus]||'No verificada'}</strong></div>`;
+                session.user.emailVerified=Boolean(sec.emailVerified); sessionStorage.setItem('skillhubSession',JSON.stringify(session));
+                statusBox.innerHTML=`<div class="stat-box"><p>Correo</p><strong>${sec.emailVerified?'✓ Verificado':'No verificado'}</strong></div><div class="stat-box"><p>Teléfono</p><strong>${sec.phoneVerified?'Verificado':'No verificado'}</strong></div><div class="stat-box"><p>Identidad</p><strong>${labels[sec.identityStatus]||'No verificada'}</strong></div>`;
+                const emailActions=document.getElementById('emailVerificationActions');
+                emailActions.innerHTML=sec.emailVerified?'<p class="service-meta" style="color:var(--success);font-weight:700;">✓ Tu correo está verificado.</p>':'<div class="card" style="padding:12px;margin:0;"><strong>Verifica tu correo</strong><p class="service-meta" style="margin-top:4px;">Te recomendamos verificarlo para aumentar la confianza al solicitar servicios.</p><button class="btn" type="button" style="margin-top:8px;" onclick="openEmailVerificationDialog()">✉️ Verificar correo</button></div>';
                 verifyButton.disabled=['pending','verified'].includes(sec.identityStatus);
                 const all=[...(cases.reports||[]).map(x=>({...x,type:'Reporte'})),...(cases.disputes||[]).map(x=>({...x,type:'Disputa'}))];
                 history.innerHTML=all.length?all.map(x=>`<div class="card" style="padding:10px"><strong>${x.type} #${x.id}</strong><p class="service-meta">${escapeHtml(x.reason)} · ${escapeHtml(x.status)}</p></div>`).join(''):'<p class="service-meta">No tienes casos abiertos.</p>';
