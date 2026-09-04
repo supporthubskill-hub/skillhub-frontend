@@ -1,1 +1,0 @@
-Provider pause/reactivate is backend-backed through PATCH /api/services/:id/pause. Paused services remain manageable by their owner, keep their availability, are hidden from public marketplace/availability, and cannot be newly booked until reactivated.
