@@ -17,13 +17,19 @@
         if (!response.ok) throw new Error('No se pudo cargar la aplicación');
         let html = await response.text();
 
-        // Public-facing rebrand while legacy internal identifiers remain stable.
         html = html.replaceAll('SkillHub', 'Zeqviro');
+        html = html.replaceAll('Zeqviro 🚀', 'Zeqviro');
+        html = html.replaceAll('Inicia sesión para ver tus conversaciones.', 'El chat está disponible para cuentas de usuario. La cuenta administrativa se gestiona desde Admin.');
 
-        // Fix the public-profile completion badge without changing the backend contract.
         const profileNeedle = "const p=data.profile||{},services=Array.isArray(data.services)?data.services:[],reviews=Array.isArray(data.reviews)?data.reviews:[];";
         const profileReplacement = profileNeedle + "const completionValues=[p.headline,p.bio,p.skills,p.experience,p.languages,p.location,p.portfolioUrl,p.avatarUrl,p.remoteAvailable?'yes':''];const profilePercent=Math.min(100,10+(completionValues.filter(v=>String(v||'').trim()).length*10));";
         html = html.replace(profileNeedle, profileReplacement);
+
+        const brandCss = `<style>
+          .logo{letter-spacing:-.02em;font-weight:900!important}.logo::after{content:' · servicios';font-size:.68rem;font-weight:650;color:#64748b;margin-left:6px}
+          @media(max-width:700px){.logo::after{display:none}}
+        </style>`;
+        html = html.replace('</head>', brandCss + '</head>');
 
         document.open();
         document.write(html);

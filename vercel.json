@@ -1,6 +1,8 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/zeqviro.html" },
-    { "source": "/admin", "destination": "/zeqviro-admin.html" }
+  "routes": [
+    { "src": "^/$", "dest": "/zeqviro.html" },
+    { "src": "^/admin/?$", "dest": "/zeqviro-admin.html" },
+    { "handle": "filesystem" },
+    { "src": "^/.*$", "dest": "/zeqviro.html" }
   ]
 }
