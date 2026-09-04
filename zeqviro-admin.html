@@ -38,8 +38,10 @@
 
         const platformScript = `<script>
           let currentCommissionPercent = 10;
+          const commissionInput=()=>document.getElementById('commissionPercent');
+          const commissionStatus=()=>document.getElementById('commissionStatus');
           function updateCommissionPreview(){
-            const input=document.getElementById('commissionPercent');
+            const input=commissionInput();
             const value=Number(input?.value||0);
             const preview=document.getElementById('commissionPreview');
             if(!preview)return;
@@ -48,34 +50,46 @@
             preview.textContent='Ejemplo con $100: Zeqviro $'+fee.toFixed(2)+' · Proveedor $'+provider.toFixed(2)+' (antes de cargos externos).';
           }
           async function loadPlatformSettings(){
-            const status=document.getElementById('commissionStatus');
+            const status=commissionStatus();
             try{
               const s=await api('/api/admin/settings');
-              currentCommissionPercent=Number(s.commissionPercent||0);
-              commissionPercent.value=currentCommissionPercent;
-              platformBrand.textContent=s.brandName||'Zeqviro';
-              platformSupport.textContent=s.supportEmail||'—';
-              platformBeta.textContent=s.betaMode?'Beta activa':'Beta desactivada';
-              platformBeta.className=s.betaMode?'pill warn':'pill ok';
-              status.textContent='';
+              currentCommissionPercent=Number(s.commissionPercent ?? 10);
+              const input=commissionInput();
+              const brand=document.getElementById('platformBrand');
+              const support=document.getElementById('platformSupport');
+              const beta=document.getElementById('platformBeta');
+              if(input) input.value=currentCommissionPercent;
+              if(brand) brand.textContent=s.brandName||'Zeqviro';
+              if(support) support.textContent=s.supportEmail||'—';
+              if(beta){beta.textContent=s.betaMode?'Beta activa':'Beta desactivada';beta.className=s.betaMode?'pill warn':'pill ok';}
+              if(status){status.textContent='Comisión cargada correctamente.';status.style.color='var(--success)';}
               updateCommissionPreview();
-            }catch(e){status.textContent=e.message;status.style.color='var(--danger)'}
+            }catch(e){if(status){status.textContent=e.message||'No se pudo cargar la configuración.';status.style.color='var(--danger)';}}
           }
           async function saveCommission(){
-            const button=document.getElementById('saveCommissionButton'),status=document.getElementById('commissionStatus');
-            const percent=Number(document.getElementById('commissionPercent').value);
-            if(!Number.isFinite(percent)||percent<0||percent>30){status.textContent='La comisión debe estar entre 0% y 30%.';status.style.color='var(--danger)';return;}
-            const confirmed=await askConfirm({title:'Cambiar comisión',message:'La comisión cambiará de '+currentCommissionPercent+'% a '+percent+'%. El nuevo porcentaje se aplicará solo a nuevas reservas.',confirmText:'Guardar '+percent+'%'});
+            const button=document.getElementById('saveCommissionButton');
+            const status=commissionStatus();
+            const input=commissionInput();
+            const percent=Number(input?.value);
+            if(!Number.isFinite(percent)||percent<0||percent>30){if(status){status.textContent='La comisión debe estar entre 0% y 30%.';status.style.color='var(--danger)';}return;}
+            let confirmed=true;
+            if(typeof askConfirm==='function'){
+              confirmed=await askConfirm({title:'Cambiar comisión',message:'La comisión cambiará de '+currentCommissionPercent+'% a '+percent+'%. El nuevo porcentaje se aplicará solo a nuevas reservas.',confirmText:'Guardar '+percent+'%'});
+            }else{
+              confirmed=window.confirm('Cambiar comisión de '+currentCommissionPercent+'% a '+percent+'%?');
+            }
             if(!confirmed)return;
-            button.disabled=true;status.textContent='Guardando…';status.style.color='var(--muted)';
+            if(button)button.disabled=true;
+            if(status){status.textContent='Guardando…';status.style.color='var(--muted)';}
             try{
               const result=await api('/api/admin/settings/commission','PATCH',{percent});
-              currentCommissionPercent=Number(result.commissionPercent);
-              commissionPercent.value=currentCommissionPercent;
-              status.textContent=result.message||'Comisión actualizada.';status.style.color='var(--success)';
+              currentCommissionPercent=Number(result.commissionPercent ?? percent);
+              if(input)input.value=currentCommissionPercent;
+              if(status){status.textContent=(result.message||'Comisión actualizada.')+' Nuevo valor: '+currentCommissionPercent+'%';status.style.color='var(--success)';}
               updateCommissionPreview();
               if(typeof loadActivity==='function')await loadActivity();
-            }catch(e){status.textContent=e.message;status.style.color='var(--danger)'}finally{button.disabled=false}
+            }catch(e){if(status){status.textContent=e.message||'No se pudo guardar la comisión.';status.style.color='var(--danger)';}}
+            finally{if(button)button.disabled=false;}
           }
           document.getElementById('commissionPercent')?.addEventListener('input',updateCommissionPreview);
           document.getElementById('saveCommissionButton')?.addEventListener('click',saveCommission);
