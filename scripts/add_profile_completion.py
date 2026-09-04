@@ -1,3 +1,4 @@
+# Apply optional profile-completion guidance to PR #18.
 from pathlib import Path
 import re
 p=Path('index.html')
@@ -40,7 +41,6 @@ needle="profilePageRemote.checked=p.remoteAvailable!==false;"
 if needle not in s: raise SystemExit('profile load assignment not found')
 s=s.replace(needle, needle+' updateProfileCompletion();',1)
 
-# Also show profile completion publicly, clearly distinct from verification.
 public_needle="const p=data.profile||{}, services=Array.isArray(data.services)?data.services:[], reviews=Array.isArray(data.reviews)?data.reviews:[];"
 public_add="""const p=data.profile||{}, services=Array.isArray(data.services)?data.services:[], reviews=Array.isArray(data.reviews)?data.reviews:[];\n                const publicFields=[p.headline,p.bio,p.skills,p.experience,p.languages,p.location,p.portfolioUrl,p.avatarUrl,p.remoteAvailable?'sí':''];\n                const profilePercent=Math.min(100,10+(publicFields.filter(v=>String(v||'').trim()).length*10));"""
 if public_needle not in s: raise SystemExit('public profile data line not found')
