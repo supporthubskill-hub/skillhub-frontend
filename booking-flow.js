@@ -1,11 +1,12 @@
 (() => {
-  const statusLabel = (status) => ({
+  const statusLabel = (status) => window.ZeqviroStatusLabel ? window.ZeqviroStatusLabel(status) : ({
     pending: 'Pendiente',
     confirmed: 'Confirmada',
     rejected: 'Rechazada',
     cancelled: 'Cancelada',
     completed: 'Completada'
   }[status] || status);
+  const formatDateTime = (value) => new Date(value).toLocaleString(window.ZeqviroI18n?.locale || 'es-US');
 
   window.renderServices = function(items) {
     const grid = document.getElementById('servicesGrid');
@@ -171,7 +172,7 @@
       if (!sr.ok) throw new Error(slots.error || 'No se pudo cargar la disponibilidad');
       if (!br.ok) throw new Error(rows.error || 'No se pudieron cargar las reservas');
       myAvailabilityData = slots;
-      list.innerHTML = slots.length ? slots.map((x) => `<div class="booking-slot-card"><strong>${escapeHtml(x.serviceName)}</strong><p class="service-meta">${new Date(x.startsAt).toLocaleString()} · ${x.durationMinutes} min</p><span class="booking-status ${x.available ? 'status-open' : 'status-held'}">${x.available ? 'Disponible' : 'Apartado por una solicitud'}</span>${x.available ? `<div class="dialog-actions"><button class="btn btn-secondary" onclick="editAvailability(${x.id})">Editar</button><button class="btn btn-danger" onclick="deleteAvailability(${x.id})">Eliminar</button></div>` : ''}</div>`).join('') : '<div class="chat-empty">No has añadido horarios.</div>';
+      list.innerHTML = slots.length ? slots.map((x) => `<div class="booking-slot-card"><strong>${escapeHtml(x.serviceName)}</strong><p class="service-meta">${formatDateTime(x.startsAt)} · ${x.durationMinutes} min</p><span class="booking-status ${x.available ? 'status-open' : 'status-held'}">${x.available ? 'Disponible' : 'Apartado por una solicitud'}</span>${x.available ? `<div class="dialog-actions"><button class="btn btn-secondary" onclick="editAvailability(${x.id})">Editar</button><button class="btn btn-danger" onclick="deleteAvailability(${x.id})">Eliminar</button></div>` : ''}</div>`).join('') : '<div class="chat-empty">No has añadido horarios.</div>';
 
       bookings.innerHTML = rows.length ? rows.map((item) => {
         const status = statusLabel(item.status);
@@ -191,7 +192,7 @@
         if (item.status === 'confirmed' || item.status === 'completed') {
           actions += `<button class="booking-link" onclick="openDisputeDialog(${item.id})">¿Tuviste un problema? Abrir disputa</button>`;
         }
-        return `<div class="booking-request-card"><div class="booking-request-head"><div><strong>${escapeHtml(item.serviceName)}</strong><p class="service-meta">${new Date(item.date).toLocaleString()} · ${item.perspective === 'provider' ? 'Solicitud de cliente' : 'Tu solicitud'}</p></div><span class="booking-status status-${escapeHtml(item.status)}">${escapeHtml(status)}</span></div><div class="booking-actions">${actions}</div></div>`;
+        return `<div class="booking-request-card"><div class="booking-request-head"><div><strong>${escapeHtml(item.serviceName)}</strong><p class="service-meta">${formatDateTime(item.date)} · ${item.perspective === 'provider' ? 'Solicitud de cliente' : 'Tu solicitud'}</p></div><span class="booking-status status-${escapeHtml(item.status)}">${escapeHtml(status)}</span></div><div class="booking-actions">${actions}</div></div>`;
       }).join('') : '<div class="chat-empty">Aún no tienes solicitudes o reservas.</div>';
     } catch (error) {
       const status = document.getElementById('availabilityStatus');
