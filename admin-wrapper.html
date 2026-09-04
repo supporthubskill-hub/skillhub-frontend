@@ -14,8 +14,8 @@
         const response = await fetch('/admin.html?admin_source=1', { cache: 'no-store' });
         if (!response.ok) throw new Error('No se pudo cargar Admin');
         let html = await response.text();
-        html = html.replace('</head>', '<link rel="stylesheet" href="/admin-notifications.css?v=1"><link rel="stylesheet" href="/admin-user-warnings.css?v=1"></head>');
-        html = html.replace('</body>', '<script src="/admin-notifications.js?v=1"><\/script><script src="/admin-user-warnings.js?v=1"><\/script><script src="/admin-sanctions.js?v=1"><\/script></body>');
+        html = html.replace('</head>', '<link rel="stylesheet" href="/admin-notifications.css?v=1"><link rel="stylesheet" href="/admin-user-warnings.css?v=1"><link rel="stylesheet" href="/reports-trust.css?v=1"></head>');
+        html = html.replace('</body>', '<script src="/admin-notifications.js?v=1"><\/script><script src="/admin-user-warnings.js?v=1"><\/script><script src="/admin-sanctions.js?v=1"><\/script><script src="/reports-trust.js?v=1"><\/script></body>');
         document.open();
         document.write(html);
         document.close();
