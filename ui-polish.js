@@ -10,6 +10,53 @@
   addHero('tab-chat', '💬 Conversaciones', 'Habla con claridad antes de confirmar', 'Mantén aquí los detalles del servicio y de la reserva para que ambas partes tengan el mismo contexto.');
   addHero('tab-dashboard', '🛡️ Centro de confianza', 'Ayuda, seguridad y soporte en un solo lugar', 'Revisa tu cuenta, tus reportes o disputas y contacta a soporte cuando lo necesites.');
 
+  const searchTab = document.getElementById('tab-search');
+  if (searchTab) {
+    const hero = searchTab.querySelector('.marketplace-hero');
+    const searchInput = document.getElementById('searchInput');
+    const areaFilter = document.getElementById('areaFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const typeFilter = document.getElementById('typeFilter');
+    const sortFilter = document.getElementById('sortFilter');
+    const searchCard = searchInput?.closest('.card');
+
+    if (hero && searchInput && areaFilter && !hero.querySelector('.hero-search-box')) {
+      searchInput.placeholder = '¿Qué servicio necesitas?';
+      searchInput.setAttribute('aria-label', 'Servicio que necesitas');
+      areaFilter.placeholder = '¿En qué ciudad o área? (opcional)';
+      areaFilter.setAttribute('aria-label', 'Ciudad o área opcional');
+
+      const searchBox = document.createElement('div');
+      searchBox.className = 'hero-search-box';
+      searchBox.innerHTML = '<div class="hero-search-heading"><strong>Busca un servicio</strong><span>Escribe lo que necesitas y, si quieres, tu zona.</span></div><div class="hero-search-fields"></div><button class="btn hero-search-button" type="button">Buscar servicios</button>';
+      const fields = searchBox.querySelector('.hero-search-fields');
+      fields.append(searchInput, areaFilter);
+      searchBox.querySelector('.hero-search-button').addEventListener('click', () => {
+        if (typeof filterServices === 'function') filterServices();
+        document.getElementById('servicesGrid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      const heroCopy = hero.querySelector('.marketplace-hero-copy') || hero;
+      const actions = hero.querySelector('.marketplace-hero-actions');
+      if (actions) heroCopy.insertBefore(searchBox, actions); else heroCopy.appendChild(searchBox);
+
+      const primary = hero.querySelector('.marketplace-primary');
+      if (primary) primary.hidden = true;
+      const secondary = hero.querySelector('.marketplace-secondary');
+      if (secondary) secondary.textContent = '¿Ofreces un servicio? Publicar servicio';
+    }
+
+    if (searchCard && categoryFilter && typeFilter && sortFilter && !searchCard.querySelector('.compact-filters')) {
+      const details = document.createElement('details');
+      details.className = 'compact-filters';
+      details.innerHTML = '<summary><span>⚙️ Filtros opcionales</span><small>Categoría, modalidad y orden</small></summary><div class="compact-filter-grid"></div>';
+      const grid = details.querySelector('.compact-filter-grid');
+      grid.append(categoryFilter, typeFilter, sortFilter);
+      searchCard.innerHTML = '';
+      searchCard.classList.add('compact-filter-card');
+      searchCard.appendChild(details);
+    }
+  }
+
   const publish = document.getElementById('tab-publish');
   if (publish) {
     const cards = publish.querySelectorAll(':scope > .card');
