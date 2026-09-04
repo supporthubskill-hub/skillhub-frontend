@@ -1,93 +1,24 @@
 (() => {
   const API = 'https://skillhub-backend-b5iy.onrender.com';
+  function sessionData(){try{return JSON.parse(sessionStorage.getItem('skillhubSession')||'null')}catch{return null}}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function currentServices(){try{return Array.isArray(myServicesData)?myServicesData:[]}catch{return []}}
 
-  function sessionData() {
-    try { return JSON.parse(sessionStorage.getItem('skillhubSession') || 'null'); } catch { return null; }
-  }
+  function ensureModal(){if(document.getElementById('providerActionDialog'))return;document.body.insertAdjacentHTML('beforeend',`<dialog id="providerActionDialog" class="provider-action-dialog"><div class="provider-dialog-body"><div id="providerDialogIcon" class="provider-dialog-icon">👁️</div><h3 id="providerDialogTitle"></h3><div id="providerDialogContent"></div><div class="provider-dialog-actions"><button type="button" class="btn secondary" id="providerDialogCancel">Cerrar</button><button type="button" class="btn" id="providerDialogConfirm" hidden>Confirmar</button></div></div></dialog>`);document.getElementById('providerDialogCancel').onclick=()=>document.getElementById('providerActionDialog').close()}
+  function showDialog({icon='👁️',title,html,confirmText,onConfirm,danger=false}){ensureModal();const d=document.getElementById('providerActionDialog'),b=document.getElementById('providerDialogConfirm');document.getElementById('providerDialogIcon').textContent=icon;document.getElementById('providerDialogTitle').textContent=title;document.getElementById('providerDialogContent').innerHTML=html;b.hidden=!confirmText;b.textContent=confirmText||'';b.classList.toggle('danger-action',danger);b.onclick=async()=>{if(onConfirm){b.disabled=true;try{await onConfirm();d.close()}catch(error){document.getElementById('providerDialogContent').insertAdjacentHTML('beforeend',`<p class="provider-dialog-error">${esc(error.message||'No se pudo completar la acción')}</p>`)}finally{b.disabled=false}}};d.showModal()}
 
-  function renderQuota() {
-    const source = document.getElementById('serviceLimitStatus');
-    if (!source) return;
-    const text = String(source.textContent || '');
-    const match = text.match(/(\d+)\/5[\s\S]*?Te quedan\s+(\d+)/i);
-    if (!match) return;
-    const used = Math.max(0, Math.min(5, Number(match[1]) || 0));
-    const remaining = Math.max(0, Math.min(5, Number(match[2]) || 0));
-    let card = document.getElementById('serviceQuotaCard');
-    if (!card) {
-      card = document.createElement('div');
-      card.id = 'serviceQuotaCard';
-      card.className = 'service-quota-card';
-      source.insertAdjacentElement('afterend', card);
-    }
-    card.innerHTML = `<div class="service-quota-main"><div><span class="service-quota-label">Intentos de publicación · últimas 24 h</span><strong>${used}<small>/5 usados</small></strong></div><div class="service-quota-remaining">${remaining}<span>disponibles</span></div></div><div class="service-quota-track"><span style="width:${used * 20}%"></span></div><p>Crear un servicio usa 1 intento. <strong>Si lo eliminas, ese intento sigue contando hasta que pasen 24 horas.</strong> Editarlo no consume otro intento.</p>`;
-    source.hidden = true;
-  }
+  function renderQuota(){const source=document.getElementById('serviceLimitStatus');if(!source)return;const text=String(source.textContent||''),match=text.match(/(\d+)\/5[\s\S]*?Te quedan\s+(\d+)/i);if(!match)return;const used=Math.max(0,Math.min(5,Number(match[1])||0)),remaining=Math.max(0,Math.min(5,Number(match[2])||0));let card=document.getElementById('serviceQuotaCard');if(!card){card=document.createElement('div');card.id='serviceQuotaCard';card.className='service-quota-card';source.insertAdjacentElement('afterend',card)}card.innerHTML=`<div class="service-quota-main"><div><span class="service-quota-label">Intentos de publicación · últimas 24 h</span><strong>${used}<small>/5 usados</small></strong></div><div class="service-quota-remaining">${remaining}<span>disponibles</span></div></div><div class="service-quota-track"><span style="width:${used*20}%"></span></div><p>Crear un servicio usa 1 intento. <strong>Si lo eliminas, ese intento sigue contando hasta que pasen 24 horas.</strong> Editarlo no consume otro intento.</p>`;source.hidden=true}
 
-  async function removeService(id, name) {
-    const session = sessionData();
-    if (!session?.token) return alert('Inicia sesión para administrar tus servicios.');
-    const ok = confirm(`¿Eliminar “${name || 'este servicio'}”?\n\nDejará de aparecer en el marketplace. El intento usado seguirá contando dentro del límite de 5 publicaciones por 24 horas.`);
-    if (!ok) return;
-    try {
-      const response = await fetch(`${API}/api/services/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session.token}` } });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'No se pudo eliminar el servicio');
-      if (typeof loadMyServices === 'function') await loadMyServices();
-      if (typeof loadCalendar === 'function') await loadCalendar();
-      if (typeof fetchServicesFromAPI === 'function') await fetchServicesFromAPI();
-      alert('Servicio eliminado del marketplace. El intento seguirá contando durante 24 horas.');
-    } catch (error) {
-      alert(error.message || 'No se pudo eliminar el servicio.');
-    }
-  }
+  async function refreshAll(){if(typeof loadMyServices==='function')await loadMyServices();if(typeof loadCalendar==='function')await loadCalendar();if(typeof fetchServicesFromAPI==='function')await fetchServicesFromAPI()}
+  async function removeService(id,name){const s=sessionData();if(!s?.token)return;showDialog({icon:'🗑️',title:'Eliminar servicio',html:`<p>¿Quieres eliminar <strong>${esc(name)}</strong>?</p><p class="provider-dialog-note">Dejará de aparecer en el marketplace. El intento usado seguirá contando dentro del límite de 5 publicaciones por 24 horas.</p>`,confirmText:'Eliminar servicio',danger:true,onConfirm:async()=>{const r=await fetch(`${API}/api/services/${id}`,{method:'DELETE',headers:{Authorization:`Bearer ${s.token}`}}),data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'No se pudo eliminar el servicio');await refreshAll()}})}
+  function previewService(service){showDialog({icon:'👁️',title:'Vista previa del servicio',html:`<div class="service-preview-card"><span class="service-state published">Vista del cliente</span><h4>${esc(service?.name||'Servicio')}</h4><p>${esc(service?.desc||'')}</p><p class="provider-dialog-note">${esc(service?.cat||'Servicio')} · ${esc(service?.type||'Remoto')} · ${Number(service?.price||0).toFixed(2)} USD</p><div class="preview-hint">Así se verá la información principal de tu servicio para los clientes.</div></div>`})}
+  async function togglePause(id,isPaused){const s=sessionData();if(!s?.token)return;const action=isPaused?'reactivar':'pausar';showDialog({icon:isPaused?'▶️':'⏸️',title:isPaused?'Reactivar servicio':'Pausar servicio',html:`<p>${isPaused?'El servicio volverá a aparecer en el marketplace si tiene disponibilidad futura.':'El servicio dejará de aparecer en el marketplace, pero no se eliminará y conservará sus horarios.'}</p>`,confirmText:isPaused?'Reactivar':'Pausar',onConfirm:async()=>{const r=await fetch(`${API}/api/services/${id}/pause`,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:`Bearer ${s.token}`},body:JSON.stringify({paused:!isPaused})}),data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`No se pudo ${action} el servicio`);await refreshAll()}})}
 
-  function enhanceServiceCards() {
-    document.querySelectorAll('#myServicesList .my-service').forEach((card) => {
-      if (card.querySelector('.provider-delete-service')) return;
-      const edit = Array.from(card.querySelectorAll('button')).find((button) => /editService\((\d+)\)/.test(button.getAttribute('onclick') || ''));
-      const match = edit?.getAttribute('onclick')?.match(/editService\((\d+)\)/);
-      if (!edit || !match) return;
-      const id = Number(match[1]);
-      const name = card.querySelector('strong')?.textContent?.trim() || 'este servicio';
-      let actions = card.querySelector('.provider-service-actions');
-      if (!actions) {
-        actions = document.createElement('div');
-        actions.className = 'provider-service-actions';
-        edit.insertAdjacentElement('beforebegin', actions);
-        actions.appendChild(edit);
-      }
-      edit.classList.add('provider-edit-service');
-      edit.style.marginTop = '0';
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'btn provider-delete-service';
-      button.textContent = 'Eliminar servicio';
-      button.addEventListener('click', () => removeService(id, name));
-      actions.appendChild(button);
-    });
-  }
+  function enhanceServiceCards(){const services=currentServices();document.querySelectorAll('#myServicesList .my-service').forEach(card=>{const edit=Array.from(card.querySelectorAll('button')).find(b=>/editService\((\d+)\)/.test(b.getAttribute('onclick')||''));const match=edit?.getAttribute('onclick')?.match(/editService\((\d+)\)/);if(!edit||!match)return;const id=Number(match[1]),service=services.find(x=>Number(x.id)===id)||{},name=service.name||card.querySelector('strong')?.textContent?.trim()||'Servicio',isPaused=service.paused===true,missing=!isPaused&&service.hasAvailability===false;let badge=card.querySelector('.service-state');if(!badge){badge=document.createElement('span');badge.className='service-state';card.querySelector('strong')?.insertAdjacentElement('beforebegin',badge)}badge.className=`service-state ${isPaused?'paused':missing?'needs-time':'published'}`;badge.textContent=isPaused?'⏸ Pausado':missing?'🟡 Falta disponibilidad':'🟢 Publicado';card.classList.toggle('service-paused',isPaused);const statusLine=card.querySelector('.status-ready,.status-waiting');if(statusLine&&isPaused){statusLine.className='status-waiting';statusLine.textContent='⏸ No visible para clientes hasta que lo reactives'}let actions=card.querySelector('.provider-service-actions');if(!actions){actions=document.createElement('div');actions.className='provider-service-actions';edit.insertAdjacentElement('beforebegin',actions);actions.appendChild(edit)}edit.classList.add('provider-edit-service');edit.style.marginTop='0';actions.querySelectorAll('.provider-extra-action').forEach(x=>x.remove());[['👁️ Vista previa','preview'],[isPaused?'▶️ Reactivar':'⏸️ Pausar','pause'],['Eliminar servicio','delete']].forEach(([label,type])=>{const b=document.createElement('button');b.type='button';b.className=`btn provider-extra-action provider-${type}-service`;b.textContent=label;b.onclick=()=>type==='preview'?previewService(service):type==='pause'?togglePause(id,isPaused):removeService(id,name);actions.appendChild(b)})})}
 
-  const helpButton = document.querySelector('#chatContextStrip button');
-  if (helpButton) {
-    helpButton.removeAttribute('onclick');
-    helpButton.addEventListener('click', () => {
-      if (typeof switchTab === 'function') switchTab('tab-dashboard');
-      setTimeout(() => document.getElementById('tab-dashboard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-    });
-  }
+  async function renderProviderSummary(){const tab=document.getElementById('tab-publish');if(!tab)return;let box=document.getElementById('providerSummary');if(!box){box=document.createElement('div');box.id='providerSummary';box.className='provider-summary';const hero=tab.querySelector('.section-hero');(hero||tab).insertAdjacentElement(hero?'afterend':'afterbegin',box)}const services=currentServices(),pausedCount=services.filter(x=>x.paused===true).length;let pending=0,next='—';try{const s=sessionData();if(s?.token){const r=await fetch(`${API}/api/bookings/me`,{headers:{Authorization:`Bearer ${s.token}`}});if(r.ok){const data=await r.json(),items=Array.isArray(data)?data:(data.bookings||[]);pending=items.filter(x=>x.perspective==='provider'&&x.status==='pending').length;const future=items.filter(x=>x.perspective==='provider'&&x.status==='confirmed'&&new Date(x.date||x.scheduledAt||x.scheduled_at)>new Date()).sort((a,b)=>new Date(a.date||a.scheduledAt||a.scheduled_at)-new Date(b.date||b.scheduledAt||b.scheduled_at))[0];if(future)next=new Date(future.date||future.scheduledAt||future.scheduled_at).toLocaleDateString('es-US',{month:'short',day:'numeric'})}}}catch{}box.innerHTML=`<div><span>Servicios</span><strong>${services.length}</strong><small>${pausedCount} pausado${pausedCount===1?'':'s'}</small></div><div><span>Solicitudes pendientes</span><strong>${pending}</strong><small>por revisar</small></div><div><span>Próxima reserva</span><strong class="summary-date">${esc(next)}</strong><small>confirmada</small></div>`}
 
-  const originalLoadMyServices = typeof loadMyServices === 'function' ? loadMyServices : null;
-  if (originalLoadMyServices) {
-    window.loadMyServices = async function (...args) {
-      const result = await originalLoadMyServices.apply(this, args);
-      renderQuota();
-      enhanceServiceCards();
-      return result;
-    };
-  }
-
-  const limit = document.getElementById('serviceLimitStatus');
-  if (limit) new MutationObserver(() => renderQuota()).observe(limit, { childList: true, characterData: true, subtree: true });
-  setTimeout(() => { renderQuota(); enhanceServiceCards(); }, 50);
+  const helpButton=document.querySelector('#chatContextStrip button');if(helpButton){helpButton.removeAttribute('onclick');helpButton.addEventListener('click',()=>{if(typeof switchTab==='function')switchTab('tab-dashboard');setTimeout(()=>document.getElementById('tab-dashboard')?.scrollIntoView({behavior:'smooth',block:'start'}),50)})}
+  const original=typeof loadMyServices==='function'?loadMyServices:null;if(original){window.loadMyServices=async function(...args){const result=await original.apply(this,args);renderQuota();enhanceServiceCards();await renderProviderSummary();return result}}
+  const limit=document.getElementById('serviceLimitStatus');if(limit)new MutationObserver(()=>renderQuota()).observe(limit,{childList:true,characterData:true,subtree:true});setTimeout(()=>{renderQuota();enhanceServiceCards();renderProviderSummary()},80);
 })();
