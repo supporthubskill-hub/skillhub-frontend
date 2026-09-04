@@ -85,7 +85,8 @@
       if(error) error.textContent=age==null?'Ingresa una fecha de nacimiento válida.':age<MIN_BETA_AGE?'Durante la beta debes tener al menos 14 años para crear una cuenta.':'Debes aceptar los Términos, Privacidad y Normas para crear la cuenta.';
       return false;
     }
-    sessionStorage.setItem('zeqviroPendingAgePrivacy',JSON.stringify({birthDate,ageBand:ageBand(age),region:document.getElementById('authRegion')?.value||'OTHER',privacyAcceptedAt:new Date().toISOString()}));
+    const region=document.getElementById('authRegion')?.value==='NY'?'NY':'OTHER';
+    sessionStorage.setItem('zeqviroPendingAgePrivacy',JSON.stringify({birthDate,region,privacyAccepted:true}));
     return true;
   }
 
@@ -96,9 +97,7 @@
       try{
         const pending=JSON.parse(sessionStorage.getItem('zeqviroPendingAgePrivacy')||'null');
         const body=JSON.parse(init.body||'{}');
-        if(pending){
-          init={...init,body:JSON.stringify({...body,...pending})};
-        }
+        if(pending){init={...init,body:JSON.stringify({...body,...pending})};}
       }catch{}
     }
     const response=await originalFetch(input,init);
@@ -116,11 +115,7 @@
     if(consent) consent.required=registrationVisible();
   }
 
-  document.addEventListener('submit',event=>{
-    if(event.target?.id==='authForm') validateRegistration(event);
-  },true);
-  document.addEventListener('change',event=>{
-    if(event.target?.id==='authAction') setTimeout(syncVisibility,0);
-  });
+  document.addEventListener('submit',event=>{if(event.target?.id==='authForm') validateRegistration(event);},true);
+  document.addEventListener('change',event=>{if(event.target?.id==='authAction') setTimeout(syncVisibility,0);});
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',syncVisibility); else syncVisibility();
 })();
