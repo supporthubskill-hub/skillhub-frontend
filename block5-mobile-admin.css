@@ -1,7 +1,11 @@
 /* Block 5 mobile + admin hardening */
 @media(max-width:760px){
   body{overflow-x:hidden}
-  dialog{width:min(96vw,560px);max-height:92vh}
+  dialog{width:min(96vw,560px);max-height:calc(100dvh - 24px);margin:12px auto;overflow-y:auto;overscroll-behavior:contain}
+  #authDialog,#forgotPasswordDialog{max-height:calc(100dvh - 20px);border-radius:18px}
+  #authDialog .dialog-body,#forgotPasswordDialog .dialog-body{max-height:none;overflow:visible;padding:18px 16px 22px}
+  #authDialog input,#authDialog select,#authDialog button,#forgotPasswordDialog input,#forgotPasswordDialog button{min-height:44px}
+  #authDialog .dialog-actions{position:sticky;bottom:0;z-index:2;background:var(--card-bg,#fff);padding-bottom:max(14px,env(safe-area-inset-bottom));border-top:1px solid var(--border,#e2e8f0)}
   .dialog-body,.detail-body{padding:16px}
   .dialog-actions{padding:14px 16px;flex-direction:column-reverse}
   .dialog-actions .btn{width:100%;min-height:44px}
