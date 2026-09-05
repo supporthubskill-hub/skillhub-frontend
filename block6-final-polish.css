@@ -1,0 +1,40 @@
+/* Block 6 final mobile/admin review */
+html,body{max-width:100%;overflow-x:hidden}
+.block6-provider-dashboard,.block6-requests-bar,.block6-favorites-bar,.block6-search-toolbar{min-width:0}
+.b6pd-grid,.b6pd-stats,.block6-requests-list,.block6-favorites-grid{min-width:0}
+.b6pd-row,.b6pd-service,.block6-request-card,.booking-request-card,.block6-service-card{overflow-wrap:anywhere}
+.block6-request-dialog,.block6-requests-list-dialog{max-width:min(94vw,720px)}
+@media(max-width:760px){
+  .block6-provider-dashboard{padding:14px!important}
+  .b6pd-head,.block6-requests-bar,.block6-favorites-bar{align-items:stretch!important;flex-direction:column!important;gap:10px!important}
+  .b6pd-head .btn,.block6-requests-bar .btn,.block6-favorites-bar .btn{width:100%;min-height:44px}
+  .b6pd-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .b6pd-grid{grid-template-columns:1fr!important}
+  .b6pd-actions{display:grid!important;grid-template-columns:1fr!important}
+  .b6pd-actions .btn{width:100%;min-height:44px}
+  .block6-budget-row,.block6-request-actions,.block6-quote-form{grid-template-columns:1fr!important}
+  .block6-request-actions .btn,.block6-quote-form .btn{width:100%;min-height:44px}
+  .block6-request-dialog .dialog-body,.block6-requests-list-dialog .dialog-body{padding:16px!important}
+  .block6-search-toolbar{grid-template-columns:1fr!important}
+  .block6-search-toolbar input,.block6-search-toolbar select,.block6-search-toolbar button{width:100%;min-height:44px}
+  .block6-service-actions,.block6-favorite-actions{display:grid!important;grid-template-columns:1fr!important}
+  .block6-service-actions .btn,.block6-favorite-actions .btn{width:100%;min-height:44px}
+  .b6-review-form-actions{display:grid!important;grid-template-columns:1fr!important}
+  .b6-review-form-actions .btn{width:100%}
+  .notification-item{align-items:flex-start!important;text-align:left!important}
+  .notification-copy{min-width:0}
+  .notification-copy strong,.notification-copy span{overflow-wrap:anywhere}
+  #zeqviroLanguageSelect{max-width:calc(100vw - 24px)}
+}
+@media(max-width:420px){.b6pd-stats{grid-template-columns:1fr!important}}
+
+/* Admin final hardening */
+body.admin-page .bar,body.admin-page main{min-width:0}
+@media(max-width:760px){
+  body.admin-page header .row{width:100%}
+  body.admin-page header .row .btn{flex:1 1 0;min-height:44px}
+  body.admin-page .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  body.admin-page .row.filters>*{width:100%!important;min-height:44px}
+  body.admin-page .detail{width:calc(100vw - 20px);max-height:calc(100dvh - 20px)}
+}
+@media(max-width:420px){body.admin-page .stats{grid-template-columns:1fr}}
