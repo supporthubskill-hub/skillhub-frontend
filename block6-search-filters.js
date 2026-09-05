@@ -19,8 +19,18 @@
     if(oldArea) oldArea.remove();
     if(oldRow) oldRow.remove();
 
+    const toggle=document.createElement('button');
+    toggle.id='block6FilterToggle';
+    toggle.type='button';
+    toggle.className='btn btn-secondary block6-filter-toggle';
+    toggle.setAttribute('aria-expanded','false');
+    toggle.textContent='Filtros';
+
+    const advanced=document.createElement('div');
+    advanced.id='block6AdvancedFilters';
+    advanced.className='block6-advanced-filters';
+
     const row=document.createElement('div');
-    row.id='block6AdvancedFilters';
     row.className='block6-search-row';
     row.innerHTML=`
       <div class="block6-filter-group"><label for="categoryFilter">Categoría</label></div>
@@ -32,7 +42,7 @@
     row.children[3].appendChild(sort);
 
     const second=document.createElement('div');
-    second.className='block6-search-row two';
+    second.className='block6-search-row';
     second.innerHTML=`
       <div class="block6-filter-group"><label>Rango de precio</label><div class="block6-price-pair"><input id="block6MinPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="Mín. $"><input id="block6MaxPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="Máx. $"></div></div>
       <div class="block6-filter-group"><label>Disponibilidad</label><label class="block6-filter-check"><input id="block6AvailableOnly" type="checkbox"> Mostrar solo servicios con horarios disponibles</label></div>`;
@@ -42,13 +52,20 @@
     const areaWrap=document.createElement('div');
     areaWrap.className='block6-filter-group';areaWrap.innerHTML='<label for="areaFilter">Ubicación</label>';areaWrap.appendChild(area);
     second.insertBefore(areaWrap,second.firstChild);
-    second.classList.remove('two');
 
     const actions=document.createElement('div');
     actions.className='block6-filter-actions';
     actions.innerHTML='<span id="block6FilterSummary" class="block6-filter-summary" aria-live="polite"></span><button id="block6ClearFilters" type="button" class="btn btn-secondary block6-clear-filters">Limpiar filtros</button>';
 
-    container.append(row,second,actions);
+    advanced.append(row,second,actions);
+    container.append(toggle,advanced);
+
+    toggle.addEventListener('click',()=>{
+      const open=advanced.classList.toggle('is-open');
+      toggle.setAttribute('aria-expanded',String(open));
+      toggle.textContent=open?'Ocultar filtros':'Filtros';
+    });
+
     [search,area,category,type,sort,document.getElementById('block6MinRating'),document.getElementById('block6MinPrice'),document.getElementById('block6MaxPrice'),document.getElementById('block6AvailableOnly')].forEach(el=>{
       if(!el) return;
       el.removeAttribute('oninput');el.removeAttribute('onchange');
@@ -86,10 +103,7 @@
       const matchesType=!type||s.type===type;
       const rating=money(s.rating);
       const price=money(s.price);
-      const matchesRating=rating>=minRating;
-      const matchesPrice=price>=minPrice&&price<=maxPrice;
-      const matchesAvailability=!availableOnly||s.hasAvailability!==false;
-      return matchesQuery&&matchesCat&&matchesArea&&matchesType&&matchesRating&&matchesPrice&&matchesAvailability;
+      return matchesQuery&&matchesCat&&matchesArea&&matchesType&&rating>=minRating&&price>=minPrice&&price<=maxPrice&&(!availableOnly||s.hasAvailability!==false);
     });
 
     filtered=[...filtered].sort((a,b)=>{
@@ -102,10 +116,7 @@
     });
 
     const sortEl=document.getElementById('sortFilter');
-    if(sortEl&&!sortEl.querySelector('option[value="price-desc"]')){
-      sortEl.insertAdjacentHTML('beforeend','<option value="price-desc">Precio: Mayor a Menor</option><option value="reviews">Más reseñas</option><option value="available">Disponibilidad primero</option>');
-    }
-
+    if(sortEl&&!sortEl.querySelector('option[value="price-desc"]')) sortEl.insertAdjacentHTML('beforeend','<option value="price-desc">Precio: Mayor a Menor</option><option value="reviews">Más reseñas</option><option value="available">Disponibilidad primero</option>');
     if(typeof window.renderServices==='function') window.renderServices(filtered);
     const grid=document.getElementById('servicesGrid');
     if(grid&&filtered.length===0) grid.innerHTML='<div class="block6-no-results"><strong>No encontramos servicios con esos filtros.</strong><span>Prueba ampliar el precio, la ubicación o quitar algún filtro.</span></div>';
