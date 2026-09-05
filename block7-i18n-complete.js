@@ -2,31 +2,35 @@
 const L={
 'Tus mensajes aparecerán aquí.':{en:'Your messages will appear here.',pt:'Suas mensagens aparecerão aqui.',fr:'Vos messages apparaîtront ici.',zh:'你的消息会显示在这里。'},
 'Inicia sesión para ver tus reservaciones.':{en:'Sign in to view your bookings.',pt:'Entre para ver suas reservas.',fr:'Connectez-vous pour voir vos réservations.',zh:'登录以查看你的预订。'},
-'Inicia sesión':{en:'Sign in',pt:'Entrar',fr:'Se connecter',zh:'登录'},
-'Filtros':{en:'Filters',pt:'Filtros',fr:'Filtres',zh:'筛选'},
-'Mis favoritos':{en:'My favorites',pt:'Meus favoritos',fr:'Mes favoris',zh:'我的收藏'},
-'Inicia sesión para guardar favoritos.':{en:'Sign in to save favorites.',pt:'Entre para salvar favoritos.',fr:'Connectez-vous pour enregistrer des favoris.',zh:'登录以保存收藏。'},
+'Inicia sesión':{en:'Sign in',pt:'Entrar',fr:'Se connecter',zh:'登录'},'Filtros':{en:'Filters',pt:'Filtros',fr:'Filtres',zh:'筛选'},
+'Mis favoritos':{en:'My favorites',pt:'Meus favoritos',fr:'Mes favoris',zh:'我的收藏'},'Inicia sesión para guardar favoritos.':{en:'Sign in to save favorites.',pt:'Entre para salvar favoritos.',fr:'Connectez-vous pour enregistrer des favoris.',zh:'登录以保存收藏。'},
 'Los pagos reales siguen desactivados.':{en:'Real payments remain disabled.',pt:'Os pagamentos reais continuam desativados.',fr:'Les paiements réels restent désactivés.',zh:'真实付款仍处于停用状态。'},
-'Buscar':{en:'Search',pt:'Buscar',fr:'Rechercher',zh:'搜索'},
-'Servicios':{en:'Services',pt:'Serviços',fr:'Services',zh:'服务'},
-'Chat':{en:'Chat',pt:'Chat',fr:'Chat',zh:'聊天'},
-'Perfil':{en:'Profile',pt:'Perfil',fr:'Profil',zh:'个人资料'},
-'Ayuda':{en:'Help',pt:'Ajuda',fr:'Aide',zh:'帮助'},
-'Correo verificado':{en:'Verified email',pt:'E-mail verificado',fr:'E-mail vérifié',zh:'邮箱已验证'},
-'Agregar este horario':{en:'Add this time',pt:'Adicionar este horário',fr:'Ajouter ce créneau',zh:'添加此时间'},
-'Solicitudes y reservas':{en:'Requests and bookings',pt:'Solicitações e reservas',fr:'Demandes et réservations',zh:'请求和预订'},
-'Aquí puedes ver quién solicita tu servicio y aceptar, rechazar o abrir el chat.':{en:'Here you can see who requests your service and accept, reject, or open the chat.',pt:'Aqui você pode ver quem solicita seu serviço e aceitar, rejeitar ou abrir o chat.',fr:'Ici, vous pouvez voir qui demande votre service et accepter, refuser ou ouvrir le chat.',zh:'你可以在这里查看服务请求，并接受、拒绝或打开聊天。'},
-'Términos':{en:'Terms',pt:'Termos',fr:'Conditions',zh:'条款'},
-'Privacidad':{en:'Privacy',pt:'Privacidade',fr:'Confidentialité',zh:'隐私'},
-'Normas de la comunidad':{en:'Community Guidelines',pt:'Diretrizes da comunidade',fr:'Règles de la communauté',zh:'社区准则'}
+'Buscar':{en:'Search',pt:'Buscar',fr:'Rechercher',zh:'搜索'},'Servicios':{en:'Services',pt:'Serviços',fr:'Services',zh:'服务'},'Chat':{en:'Chat',pt:'Chat',fr:'Chat',zh:'聊天'},'Perfil':{en:'Profile',pt:'Perfil',fr:'Profil',zh:'个人资料'},'Ayuda':{en:'Help',pt:'Ajuda',fr:'Aide',zh:'帮助'},
+'Correo verificado':{en:'Verified email',pt:'E-mail verificado',fr:'E-mail vérifié',zh:'邮箱已验证'},'Agregar este horario':{en:'Add this time',pt:'Adicionar este horário',fr:'Ajouter ce créneau',zh:'添加此时间'},
+'Solicitudes y reservas':{en:'Requests and bookings',pt:'Solicitações e reservas',fr:'Demandes et réservations',zh:'请求和预订'},'Aquí puedes ver quién solicita tu servicio y aceptar, rechazar o abrir el chat.':{en:'Here you can see who requests your service and accept, reject, or open the chat.',pt:'Aqui você pode ver quem solicita seu serviço e aceitar, rejeitar ou abrir o chat.',fr:'Ici, vous pouvez voir qui demande votre service et accepter, refuser ou ouvrir le chat.',zh:'你可以在这里查看服务请求，并接受、拒绝或打开聊天。'},
+'Términos':{en:'Terms',pt:'Termos',fr:'Conditions',zh:'条款'},'Privacidad':{en:'Privacy',pt:'Privacidade',fr:'Confidentialité',zh:'隐私'},'Normas de la comunidad':{en:'Community Guidelines',pt:'Diretrizes da comunidade',fr:'Règles de la communauté',zh:'社区准则'},
+'Encuentra a la persona indicada para lo que necesitas.':{en:'Find the right person for what you need.',pt:'Encontre a pessoa certa para o que você precisa.',fr:'Trouvez la bonne personne pour ce dont vous avez besoin.',zh:'找到适合你需求的服务提供者。'},
+'Explora servicios, compara perfiles, conversa y organiza una reserva desde un solo lugar.':{en:'Explore services, compare profiles, chat and arrange a booking in one place.',pt:'Explore serviços, compare perfis, converse e organize uma reserva em um só lugar.',fr:'Explorez les services, comparez les profils, discutez et organisez une réservation au même endroit.',zh:'在一个地方浏览服务、比较资料、聊天并安排预订。'},
+'Busca un servicio':{en:'Find a service',pt:'Encontre um serviço',fr:'Trouver un service',zh:'查找服务'},'Escribe lo que necesitas y, si quieres, tu zona.':{en:'Describe what you need and, if you want, your area.',pt:'Descreva o que precisa e, se quiser, sua região.',fr:'Décrivez ce dont vous avez besoin et, si vous le souhaitez, votre zone.',zh:'描述你的需求，也可以填写所在地区。'},
+'¿Qué servicio necesitas?':{en:'What service do you need?',pt:'De qual serviço você precisa?',fr:'De quel service avez-vous besoin ?',zh:'你需要什么服务？'},'Buscar servicios':{en:'Search services',pt:'Buscar serviços',fr:'Rechercher des services',zh:'搜索服务'},
+'¿Ofreces un servicio? Publicar servicio':{en:'Offer a service? Publish it',pt:'Oferece um serviço? Publique',fr:'Vous proposez un service ? Publiez-le',zh:'提供服务？发布服务'},
+'Todos':{en:'All',pt:'Todos',fr:'Tous',zh:'全部'},'Desarrollo':{en:'Development',pt:'Desenvolvimento',fr:'Développement',zh:'开发'},'Hogar':{en:'Home',pt:'Casa',fr:'Maison',zh:'家居'},'Educación':{en:'Education',pt:'Educação',fr:'Éducation',zh:'教育'},
+'Filtros opcionales':{en:'Optional filters',pt:'Filtros opcionais',fr:'Filtres facultatifs',zh:'可选筛选'},'Categoría, modalidad y orden':{en:'Category, format and sorting',pt:'Categoria, modalidade e ordenação',fr:'Catégorie, modalité et tri',zh:'类别、形式和排序'},
+'Fecha y hora exactas':{en:'Exact date and time',pt:'Data e hora exatas',fr:'Date et heure exactes',zh:'确切日期和时间'},'Duración (minutos)':{en:'Duration (minutes)',pt:'Duração (minutos)',fr:'Durée (minutes)',zh:'时长（分钟）'},
+'Selecciona una conversación':{en:'Select a conversation',pt:'Selecione uma conversa',fr:'Sélectionnez une conversation',zh:'选择一个对话'},'Chat protegido':{en:'Protected chat',pt:'Chat protegido',fr:'Chat protégé',zh:'受保护的聊天'},
+'Mantén acuerdos y conversaciones dentro de Zeqviro. Durante la beta, no envíes pagos externos.':{en:'Keep agreements and conversations inside Zeqviro. During beta, do not send external payments.',pt:'Mantenha acordos e conversas dentro do Zeqviro. Durante a beta, não envie pagamentos externos.',fr:'Gardez les accords et conversations dans Zeqviro. Pendant la bêta, n’envoyez pas de paiements externes.',zh:'请将协议和对话保留在 Zeqviro 内。测试期间请勿进行外部付款。'},
+'Reportar':{en:'Report',pt:'Denunciar',fr:'Signaler',zh:'举报'},'Bloquear':{en:'Block',pt:'Bloquear',fr:'Bloquer',zh:'屏蔽'},'Ayuda y seguridad':{en:'Help and safety',pt:'Ajuda e segurança',fr:'Aide et sécurité',zh:'帮助与安全'},
+'Panel del proveedor':{en:'Provider dashboard',pt:'Painel do prestador',fr:'Tableau de bord du prestataire',zh:'服务商面板'},'Publica y administra tus servicios':{en:'Publish and manage your services',pt:'Publique e gerencie seus serviços',fr:'Publiez et gérez vos services',zh:'发布和管理你的服务'},
+'Describe tu servicio':{en:'Describe your service',pt:'Descreva seu serviço',fr:'Décrivez votre service',zh:'描述你的服务'},'Nombre del servicio':{en:'Service name',pt:'Nome do serviço',fr:'Nom du service',zh:'服务名称'},'Descripción del servicio':{en:'Service description',pt:'Descrição do serviço',fr:'Description du service',zh:'服务描述'},'Categoría':{en:'Category',pt:'Categoria',fr:'Catégorie',zh:'类别'},'Tipo':{en:'Format',pt:'Modalidade',fr:'Modalité',zh:'形式'},'Precio fijo ($)':{en:'Fixed price ($)',pt:'Preço fixo ($)',fr:'Prix fixe ($)',zh:'固定价格 ($)'},'Precio por hora ($)':{en:'Hourly price ($)',pt:'Preço por hora ($)',fr:'Prix horaire ($)',zh:'每小时价格 ($)'},
+'Completa tu perfil':{en:'Complete your profile',pt:'Complete seu perfil',fr:'Complétez votre profil',zh:'完善个人资料'},'Inicia sesión para administrar tu perfil.':{en:'Sign in to manage your profile.',pt:'Entre para gerenciar seu perfil.',fr:'Connectez-vous pour gérer votre profil.',zh:'登录以管理你的个人资料。'},
+'Centro de confianza':{en:'Trust center',pt:'Central de confiança',fr:'Centre de confiance',zh:'信任中心'},'Seguridad':{en:'Safety',pt:'Segurança',fr:'Sécurité',zh:'安全'},'Mis reseñas':{en:'My reviews',pt:'Minhas avaliações',fr:'Mes avis',zh:'我的评价'},'Soporte':{en:'Support',pt:'Suporte',fr:'Assistance',zh:'支持'}
 };
 const reverse=new Map();Object.entries(L).forEach(([es,v])=>{reverse.set(es,es);Object.values(v).forEach(x=>reverse.set(x,es));});
-const lang=()=>{const x=window.ZeqviroI18n?.language||localStorage.getItem('zeqviroLanguage')||'es';return ['es','en','pt','fr','zh'].includes(x)?x:'es';};
+const lang=()=>{const sel=document.querySelector('#zeqviroLanguageSelect');const x=sel?.value||window.ZeqviroI18n?.language||localStorage.getItem('zeqviroLanguage')||localStorage.getItem('skillhubLanguage')||'es';return ['es','en','pt','fr','zh'].includes(x)?x:'es';};
 function tr(s){if(!s)return s;const raw=String(s),t=raw.trim(),es=reverse.get(t);if(!es)return s;const out=lang()==='es'?es:(L[es]?.[lang()]||es);return raw.replace(t,out);}
 function skip(el){return !el||el.closest?.('.msg,.block6-service-description,.profile-copy,.profile-review,[data-user-content],script,style,textarea');}
 function apply(root=document.body){if(!root)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),a=[];while(w.nextNode())a.push(w.currentNode);a.forEach(n=>{if(skip(n.parentElement))return;const x=tr(n.nodeValue);if(x!==n.nodeValue)n.nodeValue=x;});root.querySelectorAll?.('option,[placeholder],[title],[aria-label]').forEach(el=>{if(el.matches('option')){const x=tr(el.textContent);if(x!==el.textContent)el.textContent=x;}['placeholder','title','aria-label'].forEach(k=>{if(el.hasAttribute?.(k)){const x=tr(el.getAttribute(k));if(x!==el.getAttribute(k))el.setAttribute(k,x);}});});document.documentElement.lang=lang();}
-let q=false;const schedule=()=>{if(q)return;q=true;requestAnimationFrame(()=>{q=false;apply();});};
-new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
-document.addEventListener('change',e=>{if(e.target?.id==='zeqviroLanguageSelect')setTimeout(apply,0);});
-window.ZeqviroBlock7I18n={apply,translate:tr};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>apply());else apply();
+let q=false;const schedule=()=>{if(q)return;q=true;requestAnimationFrame(()=>{q=false;apply();});};new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+document.addEventListener('change',e=>{if(e.target?.id==='zeqviroLanguageSelect')setTimeout(apply,0);});window.addEventListener('storage',schedule);
+window.ZeqviroBlock7I18n={apply,translate:tr,language:lang};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>apply());else apply();
 })();
