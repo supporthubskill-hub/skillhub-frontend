@@ -19,6 +19,12 @@
   #messagesLayout{min-width:0}
   #conversationList,#chatBox{max-width:100%}
   .admin-youth-badge{margin:6px 0 0;max-width:100%;white-space:normal;text-align:center}
+  #serviceFormStatus:empty{display:none!important}
+  #tab-profile .card:last-of-type{margin-bottom:8px}
+  #tab-help .card{margin-bottom:12px}
+  #tab-help .card,#tab-help .trust-center-card,#tab-help .help-card{padding-top:16px;padding-bottom:16px}
+  #tab-help .card p,#tab-help .trust-center-card p,#tab-help .help-card p{margin-top:6px;margin-bottom:8px}
+  #tab-help .section-hero,#tab-help .section-intro{margin-bottom:12px}
 }
 .admin-safety-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
 .admin-safety-box{border:1px solid var(--border,#e2e8f0);border-radius:12px;padding:13px;background:var(--card,#fff)}
