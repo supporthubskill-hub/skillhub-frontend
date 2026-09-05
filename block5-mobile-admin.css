@@ -14,9 +14,12 @@
   .chat-safety-bar{align-items:stretch!important;flex-direction:column!important}
   #messagesLayout{min-width:0}
   #conversationList,#chatBox{max-width:100%}
+  .admin-youth-badge{margin:6px 0 0;max-width:100%;white-space:normal;text-align:center}
 }
 .admin-safety-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
 .admin-safety-box{border:1px solid var(--border,#e2e8f0);border-radius:12px;padding:13px;background:var(--card,#fff)}
 .admin-safety-box strong{display:block;margin-bottom:5px}.admin-safety-box span{font-size:.88rem;color:var(--muted,#64748b)}
 .admin-youth-badge{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:.78rem;font-weight:800;margin-left:6px}
+.admin-youth-badge.admin-age-adult{background:#e2e8f0;color:#475569}
+.block5-admin-age-box{margin-bottom:12px}
 @media(max-width:760px){.admin-safety-summary{grid-template-columns:1fr}}
