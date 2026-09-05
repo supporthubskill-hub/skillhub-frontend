@@ -1,0 +1,13 @@
+.block6-review-card{border-top:4px solid var(--primary)}
+.block6-review-history{margin-top:22px;padding-top:18px;border-top:1px solid var(--border)}
+.block6-review-history h4{margin-bottom:10px}
+.block6-my-review{border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;background:var(--card-bg)}
+.block6-my-review-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.block6-my-review-head>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.block6-my-review-head span{color:#64748b;font-size:.82rem}
+.block6-verified-badge{flex:none!important;color:var(--success)!important;background:color-mix(in srgb,var(--success) 10%,transparent);border:1px solid color-mix(in srgb,var(--success) 28%,var(--border));border-radius:999px;padding:5px 8px;font-weight:700;font-size:.75rem!important}
+.block6-review-stars{margin:10px 0 6px;color:#b45309;font-size:1rem;letter-spacing:1px}
+.block6-my-review p{line-height:1.5;margin-top:6px}
+.block6-my-review small{display:block;margin-top:8px;color:#64748b}
+.b6-review .block6-verified-badge{display:inline-flex;margin-top:7px}
+@media(max-width:700px){.block6-my-review-head{flex-direction:column}.block6-verified-badge{align-self:flex-start}.block6-review-card{padding:15px}}
