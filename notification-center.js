@@ -1,81 +1,27 @@
 (() => {
-  const getSession = () => {
-    try { return JSON.parse(sessionStorage.getItem('skillhubSession') || 'null'); }
-    catch { return null; }
-  };
+  const getSession = () => { try { return JSON.parse(sessionStorage.getItem('skillhubSession') || 'null'); } catch { return null; } };
   const apiBase = typeof API_URL === 'string' ? API_URL : 'https://skillhub-backend-b5iy.onrender.com';
   const escText = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const formatDate = (value) => value ? new Date(value).toLocaleString('es-US', { dateStyle:'medium', timeStyle:'short' }) : '';
-
-  async function request(path, method='GET') {
-    const session = getSession();
-    if (!session?.token) throw new Error('Inicia sesión para ver tus notificaciones.');
-    const response = await fetch(apiBase + path, { method, headers: { 'Authorization': 'Bearer ' + session.token, 'Content-Type':'application/json' } });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'No se pudieron cargar las notificaciones.');
-    return data;
-  }
-
-  function renderCenter(data) {
-    const tab = document.getElementById('tab-notifications');
-    if (!tab) return;
-    const rows = Array.isArray(data.notifications) ? data.notifications : [];
-    const session = getSession();
-    const inner = !session?.token
-      ? '<div class="notification-empty"><strong>🔔 Tus avisos aparecerán aquí</strong><span>Inicia sesión para ver mensajes de Zeqviro.</span></div>'
-      : rows.length
-        ? `<div class="notification-toolbar"><span>${data.unreadCount || 0} sin leer</span>${data.unreadCount ? '<button type="button" class="notification-link" id="markAllNotifications">Marcar todo como leído</button>' : ''}</div><div class="notification-list">${rows.map(row => `<button type="button" class="notification-item ${row.readAt ? '' : 'unread'}" data-notification-id="${row.id}"><span class="notification-dot" aria-hidden="true"></span><span class="notification-copy"><strong>${escText(row.title)}</strong><span>${escText(row.body)}</span><small>${escText(formatDate(row.createdAt))}</small></span></button>`).join('')}</div>`
-        : '<div class="notification-empty"><strong>✨ Todo al día</strong><span>No tienes notificaciones por ahora.</span></div>';
-    tab.innerHTML = `<div class="notification-hero"><span>🔔 Centro de notificaciones</span><h2>Mensajes importantes de Zeqviro</h2><p>Aquí verás avisos enviados por el equipo de Zeqviro sobre tu cuenta, reservas o novedades de la plataforma.</p></div><div class="card notification-card">${inner}</div>`;
-    bindNotificationActions();
-  }
-
-  function updateBadge(count) {
-    const badge = document.getElementById('notif-count');
-    if (!badge) return;
-    const n = Number(count || 0);
-    badge.textContent = String(n);
-    badge.parentElement?.classList.toggle('has-notifications', n > 0);
-  }
-
-  async function loadNotifications() {
-    const session = getSession();
-    if (!session?.token) { updateBadge(0); renderCenter({ notifications:[], unreadCount:0 }); return; }
-    try {
-      const data = await request('/api/notifications');
-      updateBadge(data.unreadCount);
-      renderCenter(data);
-    } catch (error) {
-      const tab = document.getElementById('tab-notifications');
-      if (tab) tab.innerHTML = `<div class="card notification-card"><div class="notification-empty"><strong>No pudimos cargar tus notificaciones</strong><span>${escText(error.message)}</span><button type="button" class="btn" onclick="window.loadZeqviroNotifications?.()">Intentar otra vez</button></div></div>`;
-    }
-  }
-
-  async function markRead(id) {
-    try { await request(`/api/notifications/${id}/read`, 'PATCH'); await loadNotifications(); }
-    catch (error) { console.error(error); }
-  }
-
-  async function markAllRead() {
-    try { await request('/api/notifications/read-all', 'PATCH'); await loadNotifications(); }
-    catch (error) { console.error(error); }
-  }
-
-  function bindNotificationActions() {
-    document.querySelectorAll('[data-notification-id].unread').forEach(el => el.addEventListener('click', () => markRead(el.dataset.notificationId)));
-    document.getElementById('markAllNotifications')?.addEventListener('click', markAllRead);
-  }
-
-  const originalSwitchTab = window.switchTab;
-  if (typeof originalSwitchTab === 'function') {
-    window.switchTab = function(tabId, button) {
-      const result = originalSwitchTab.apply(this, arguments);
-      if (tabId === 'tab-notifications') loadNotifications();
-      return result;
-    };
-  }
-
-  window.loadZeqviroNotifications = loadNotifications;
-  setTimeout(loadNotifications, 350);
-  setInterval(() => { if (getSession()?.token) loadNotifications(); }, 60000);
+  const lang = () => document.querySelector('#zeqviroLanguageSelect')?.value || window.ZeqviroBlock7I18n?.language?.() || window.ZeqviroI18n?.language || localStorage.getItem('zeqviroLanguage') || 'es';
+  const copy = {
+    es:{signin:'Inicia sesión para ver tus notificaciones.',load:'No se pudieron cargar las notificaciones.',emptyTitle:'🔔 Tus avisos aparecerán aquí',emptyBody:'Inicia sesión para ver mensajes de Zeqviro.',unread:'sin leer',markAll:'Marcar todo como leído',allGood:'✨ Todo al día',none:'No tienes notificaciones por ahora.',hero:'🔔 Centro de notificaciones',title:'Mensajes importantes de Zeqviro',desc:'Aquí verás avisos enviados por el equipo de Zeqviro sobre tu cuenta, reservas o novedades de la plataforma.',fail:'No pudimos cargar tus notificaciones',retry:'Intentar otra vez'},
+    en:{signin:'Sign in to view your notifications.',load:'Notifications could not be loaded.',emptyTitle:'🔔 Your notifications will appear here',emptyBody:'Sign in to view Zeqviro messages.',unread:'unread',markAll:'Mark all as read',allGood:'✨ You are all caught up',none:'You have no notifications right now.',hero:'🔔 Notification center',title:'Important messages from Zeqviro',desc:'Here you will see notices from Zeqviro about your account, bookings, or platform updates.',fail:'We could not load your notifications',retry:'Try again'},
+    pt:{signin:'Entre para ver suas notificações.',load:'Não foi possível carregar as notificações.',emptyTitle:'🔔 Suas notificações aparecerão aqui',emptyBody:'Entre para ver mensagens do Zeqviro.',unread:'não lidas',markAll:'Marcar tudo como lido',allGood:'✨ Tudo em dia',none:'Você não tem notificações no momento.',hero:'🔔 Central de notificações',title:'Mensagens importantes do Zeqviro',desc:'Aqui você verá avisos do Zeqviro sobre sua conta, reservas ou novidades da plataforma.',fail:'Não foi possível carregar suas notificações',retry:'Tentar novamente'},
+    fr:{signin:'Connectez-vous pour voir vos notifications.',load:'Impossible de charger les notifications.',emptyTitle:'🔔 Vos notifications apparaîtront ici',emptyBody:'Connectez-vous pour voir les messages Zeqviro.',unread:'non lues',markAll:'Tout marquer comme lu',allGood:'✨ Tout est à jour',none:'Vous n’avez aucune notification pour le moment.',hero:'🔔 Centre de notifications',title:'Messages importants de Zeqviro',desc:'Vous verrez ici les avis de Zeqviro concernant votre compte, vos réservations ou les nouveautés de la plateforme.',fail:'Impossible de charger vos notifications',retry:'Réessayer'},
+    zh:{signin:'登录以查看通知。',load:'无法加载通知。',emptyTitle:'🔔 你的通知会显示在这里',emptyBody:'登录以查看 Zeqviro 消息。',unread:'条未读',markAll:'全部标为已读',allGood:'✨ 已全部查看',none:'目前没有通知。',hero:'🔔 通知中心',title:'来自 Zeqviro 的重要消息',desc:'这里会显示与你的账户、预订或平台更新有关的 Zeqviro 通知。',fail:'无法加载你的通知',retry:'重试'}
+  };
+  const c=()=>copy[lang()]||copy.es;
+  const locale=()=>({es:'es-US',en:'en-US',pt:'pt-BR',fr:'fr-FR',zh:'zh-CN'}[lang()]||'es-US');
+  const formatDate = (value) => value ? new Date(value).toLocaleString(locale(), { dateStyle:'medium', timeStyle:'short' }) : '';
+  async function request(path, method='GET') { const session=getSession(); if(!session?.token) throw new Error(c().signin); const response=await fetch(apiBase+path,{method,headers:{'Authorization':'Bearer '+session.token,'Content-Type':'application/json'}}); const data=await response.json().catch(()=>({})); if(!response.ok) throw new Error(data.error||c().load); return data; }
+  function unreadLabel(n){return lang()==='zh'?`${n}${c().unread}`:`${n} ${c().unread}`;}
+  function renderCenter(data){const tab=document.getElementById('tab-notifications');if(!tab)return;const rows=Array.isArray(data.notifications)?data.notifications:[];const session=getSession();const inner=!session?.token?`<div class="notification-empty"><strong>${c().emptyTitle}</strong><span>${c().emptyBody}</span></div>`:rows.length?`<div class="notification-toolbar"><span>${unreadLabel(data.unreadCount||0)}</span>${data.unreadCount?`<button type="button" class="notification-link" id="markAllNotifications">${c().markAll}</button>`:''}</div><div class="notification-list">${rows.map(row=>`<button type="button" class="notification-item ${row.readAt?'':'unread'}" data-notification-id="${row.id}" data-kind="${escText(row.kind||'general')}" data-action-type="${escText(row.actionType||'')}" data-action-id="${escText(row.actionId||'')}"><span class="notification-dot" aria-hidden="true"></span><span class="notification-copy"><strong data-notification-title>${escText(row.title)}</strong><span data-notification-body>${escText(row.body)}</span><small>${escText(formatDate(row.createdAt))}</small></span></button>`).join('')}</div>`:`<div class="notification-empty"><strong>${c().allGood}</strong><span>${c().none}</span></div>`;tab.innerHTML=`<div class="notification-hero"><span>${c().hero}</span><h2>${c().title}</h2><p>${c().desc}</p></div><div class="card notification-card">${inner}</div>`;bindNotificationActions();window.ZeqviroBlock7I18n?.apply?.(tab);}
+  function updateBadge(count){const badge=document.getElementById('notif-count');if(!badge)return;const n=Number(count||0);badge.textContent=String(n);badge.parentElement?.classList.toggle('has-notifications',n>0);}
+  async function loadNotifications(){const session=getSession();if(!session?.token){updateBadge(0);renderCenter({notifications:[],unreadCount:0});return;}try{const data=await request('/api/notifications');updateBadge(data.unreadCount);renderCenter(data);}catch(error){const tab=document.getElementById('tab-notifications');if(tab)tab.innerHTML=`<div class="card notification-card"><div class="notification-empty"><strong>${c().fail}</strong><span>${escText(error.message)}</span><button type="button" class="btn" onclick="window.loadZeqviroNotifications?.()">${c().retry}</button></div></div>`;}}
+  async function markRead(id){try{await request(`/api/notifications/${id}/read`,'PATCH');await loadNotifications();}catch(error){console.error(error);}}
+  async function markAllRead(){try{await request('/api/notifications/read-all','PATCH');await loadNotifications();}catch(error){console.error(error);}}
+  function bindNotificationActions(){document.querySelectorAll('[data-notification-id].unread').forEach(el=>el.addEventListener('click',()=>markRead(el.dataset.notificationId)));document.getElementById('markAllNotifications')?.addEventListener('click',markAllRead);}
+  const originalSwitchTab=window.switchTab;if(typeof originalSwitchTab==='function'){window.switchTab=function(tabId,button){const result=originalSwitchTab.apply(this,arguments);if(tabId==='tab-notifications')loadNotifications();return result;};}
+  document.addEventListener('change',e=>{if(e.target?.id==='zeqviroLanguageSelect')setTimeout(loadNotifications,0);});
+  window.loadZeqviroNotifications=loadNotifications;setTimeout(loadNotifications,350);setInterval(()=>{if(getSession()?.token)loadNotifications();},60000);
 })();
