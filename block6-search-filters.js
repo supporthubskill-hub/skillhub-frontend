@@ -1,129 +1,30 @@
 (()=>{
   const money=(value)=>Number.isFinite(Number(value))?Number(value):0;
   const text=(value)=>String(value||'').toLowerCase().trim();
-
+  const lang=()=>window.ZeqviroBlock7I18n?.language?.()||document.getElementById('zeqviroLanguageSelect')?.value||localStorage.getItem('zeqviroLanguage')||'es';
+  const copy={
+    es:{filters:'Filtros',hide:'Ocultar filtros',category:'Categoría',format:'Modalidad',rating:'Calificación mínima',anyRating:'Cualquier calificación',four:'4.0 o más',fourFive:'4.5 o más',sort:'Ordenar',price:'Rango de precio',availability:'Disponibilidad',availableOnly:'Mostrar solo servicios con horarios disponibles',location:'Ubicación',area:'Ciudad o área general',min:'Mín. $',max:'Máx. $',clear:'Limpiar filtros',priceDesc:'Precio: Mayor a Menor',reviews:'Más reseñas',availableFirst:'Disponibilidad primero',none:'No encontramos servicios con esos filtros.',noneHint:'Prueba ampliar el precio, la ubicación o quitar algún filtro.',one:'servicio encontrado',many:'servicios encontrados'},
+    en:{filters:'Filters',hide:'Hide filters',category:'Category',format:'Format',rating:'Minimum rating',anyRating:'Any rating',four:'4.0 or higher',fourFive:'4.5 or higher',sort:'Sort',price:'Price range',availability:'Availability',availableOnly:'Show only services with available times',location:'Location',area:'City or general area',min:'Min $',max:'Max $',clear:'Clear filters',priceDesc:'Price: High to Low',reviews:'Most reviews',availableFirst:'Availability first',none:'No services match these filters.',noneHint:'Try expanding the price or location, or remove a filter.',one:'service found',many:'services found'},
+    pt:{filters:'Filtros',hide:'Ocultar filtros',category:'Categoria',format:'Modalidade',rating:'Avaliação mínima',anyRating:'Qualquer avaliação',four:'4,0 ou mais',fourFive:'4,5 ou mais',sort:'Ordenar',price:'Faixa de preço',availability:'Disponibilidade',availableOnly:'Mostrar apenas serviços com horários disponíveis',location:'Localização',area:'Cidade ou área geral',min:'Mín. $',max:'Máx. $',clear:'Limpar filtros',priceDesc:'Preço: maior para menor',reviews:'Mais avaliações',availableFirst:'Disponibilidade primeiro',none:'Nenhum serviço corresponde a esses filtros.',noneHint:'Tente ampliar o preço ou a localização, ou remova um filtro.',one:'serviço encontrado',many:'serviços encontrados'},
+    fr:{filters:'Filtres',hide:'Masquer les filtres',category:'Catégorie',format:'Modalité',rating:'Note minimale',anyRating:'Toute note',four:'4,0 ou plus',fourFive:'4,5 ou plus',sort:'Trier',price:'Fourchette de prix',availability:'Disponibilité',availableOnly:'Afficher uniquement les services avec des créneaux disponibles',location:'Localisation',area:'Ville ou zone générale',min:'Min. $',max:'Max. $',clear:'Effacer les filtres',priceDesc:'Prix : décroissant',reviews:'Plus d’avis',availableFirst:'Disponibilité en premier',none:'Aucun service ne correspond à ces filtres.',noneHint:'Essayez d’élargir le prix ou la localisation, ou retirez un filtre.',one:'service trouvé',many:'services trouvés'},
+    zh:{filters:'筛选',hide:'隐藏筛选',category:'类别',format:'形式',rating:'最低评分',anyRating:'任何评分',four:'4.0 及以上',fourFive:'4.5 及以上',sort:'排序',price:'价格范围',availability:'可用时间',availableOnly:'仅显示有可用时间的服务',location:'位置',area:'城市或大致区域',min:'最低 $',max:'最高 $',clear:'清除筛选',priceDesc:'价格：从高到低',reviews:'评价最多',availableFirst:'可用时间优先',none:'没有符合这些筛选条件的服务。',noneHint:'尝试扩大价格或位置范围，或移除一个筛选条件。',one:'项服务',many:'项服务'}
+  };
+  const c=()=>copy[lang()]||copy.es;
   function ensureAdvancedFilters(){
     if(document.getElementById('block6AdvancedFilters')) return;
-    const search=document.getElementById('searchInput');
-    const category=document.getElementById('categoryFilter');
-    const type=document.getElementById('typeFilter');
-    const sort=document.getElementById('sortFilter');
-    if(!search||!category||!type||!sort) return;
-
-    const container=search.parentElement;
-    if(!container) return;
-    container.classList.add('block6-search-panel');
-
-    const oldArea=document.getElementById('areaFilter');
-    const oldRow=category.parentElement;
-    if(oldArea) oldArea.remove();
-    if(oldRow) oldRow.remove();
-
-    const toggle=document.createElement('button');
-    toggle.id='block6FilterToggle';
-    toggle.type='button';
-    toggle.className='btn btn-secondary block6-filter-toggle';
-    toggle.setAttribute('aria-expanded','false');
-    toggle.textContent='Filtros';
-
-    const advanced=document.createElement('div');
-    advanced.id='block6AdvancedFilters';
-    advanced.className='block6-advanced-filters';
-
-    const row=document.createElement('div');
-    row.className='block6-search-row';
-    row.innerHTML=`
-      <div class="block6-filter-group"><label for="categoryFilter">Categoría</label></div>
-      <div class="block6-filter-group"><label for="typeFilter">Modalidad</label></div>
-      <div class="block6-filter-group"><label for="block6MinRating">Calificación mínima</label><select id="block6MinRating"><option value="0">Cualquier calificación</option><option value="4">4.0 o más</option><option value="4.5">4.5 o más</option></select></div>
-      <div class="block6-filter-group"><label for="sortFilter">Ordenar</label></div>`;
-    row.children[0].appendChild(category);
-    row.children[1].appendChild(type);
-    row.children[3].appendChild(sort);
-
-    const second=document.createElement('div');
-    second.className='block6-search-row';
-    second.innerHTML=`
-      <div class="block6-filter-group"><label>Rango de precio</label><div class="block6-price-pair"><input id="block6MinPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="Mín. $"><input id="block6MaxPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="Máx. $"></div></div>
-      <div class="block6-filter-group"><label>Disponibilidad</label><label class="block6-filter-check"><input id="block6AvailableOnly" type="checkbox"> Mostrar solo servicios con horarios disponibles</label></div>`;
-
-    const area=document.createElement('input');
-    area.type='search';area.id='areaFilter';area.placeholder='Ciudad o área general';
-    const areaWrap=document.createElement('div');
-    areaWrap.className='block6-filter-group';areaWrap.innerHTML='<label for="areaFilter">Ubicación</label>';areaWrap.appendChild(area);
-    second.insertBefore(areaWrap,second.firstChild);
-
-    const actions=document.createElement('div');
-    actions.className='block6-filter-actions';
-    actions.innerHTML='<span id="block6FilterSummary" class="block6-filter-summary" aria-live="polite"></span><button id="block6ClearFilters" type="button" class="btn btn-secondary block6-clear-filters">Limpiar filtros</button>';
-
-    advanced.append(row,second,actions);
-    container.append(toggle,advanced);
-
-    toggle.addEventListener('click',()=>{
-      const open=advanced.classList.toggle('is-open');
-      toggle.setAttribute('aria-expanded',String(open));
-      toggle.textContent=open?'Ocultar filtros':'Filtros';
-    });
-
-    [search,area,category,type,sort,document.getElementById('block6MinRating'),document.getElementById('block6MinPrice'),document.getElementById('block6MaxPrice'),document.getElementById('block6AvailableOnly')].forEach(el=>{
-      if(!el) return;
-      el.removeAttribute('oninput');el.removeAttribute('onchange');
-      el.addEventListener(el.tagName==='INPUT'?'input':'change',()=>window.filterServices?.());
-      if(el.type==='checkbox') el.addEventListener('change',()=>window.filterServices?.());
-    });
-    document.getElementById('block6ClearFilters')?.addEventListener('click',clearAdvancedFilters);
+    const search=document.getElementById('searchInput'),category=document.getElementById('categoryFilter'),type=document.getElementById('typeFilter'),sort=document.getElementById('sortFilter');if(!search||!category||!type||!sort)return;
+    const container=search.parentElement;if(!container)return;container.classList.add('block6-search-panel');document.getElementById('areaFilter')?.remove();const oldRow=category.parentElement;if(oldRow)oldRow.remove();
+    const toggle=document.createElement('button');toggle.id='block6FilterToggle';toggle.type='button';toggle.className='btn btn-secondary block6-filter-toggle';toggle.setAttribute('aria-expanded','false');toggle.textContent=c().filters;
+    const advanced=document.createElement('div');advanced.id='block6AdvancedFilters';advanced.className='block6-advanced-filters';
+    const row=document.createElement('div');row.className='block6-search-row';row.innerHTML=`<div class="block6-filter-group"><label for="categoryFilter">${c().category}</label></div><div class="block6-filter-group"><label for="typeFilter">${c().format}</label></div><div class="block6-filter-group"><label for="block6MinRating">${c().rating}</label><select id="block6MinRating"><option value="0">${c().anyRating}</option><option value="4">${c().four}</option><option value="4.5">${c().fourFive}</option></select></div><div class="block6-filter-group"><label for="sortFilter">${c().sort}</label></div>`;row.children[0].appendChild(category);row.children[1].appendChild(type);row.children[3].appendChild(sort);
+    const second=document.createElement('div');second.className='block6-search-row';second.innerHTML=`<div class="block6-filter-group"><label>${c().price}</label><div class="block6-price-pair"><input id="block6MinPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="${c().min}"><input id="block6MaxPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="${c().max}"></div></div><div class="block6-filter-group"><label>${c().availability}</label><label class="block6-filter-check"><input id="block6AvailableOnly" type="checkbox"> ${c().availableOnly}</label></div>`;
+    const area=document.createElement('input');area.type='search';area.id='areaFilter';area.placeholder=c().area;const areaWrap=document.createElement('div');areaWrap.className='block6-filter-group';areaWrap.innerHTML=`<label for="areaFilter">${c().location}</label>`;areaWrap.appendChild(area);second.insertBefore(areaWrap,second.firstChild);
+    const actions=document.createElement('div');actions.className='block6-filter-actions';actions.innerHTML=`<span id="block6FilterSummary" class="block6-filter-summary" aria-live="polite"></span><button id="block6ClearFilters" type="button" class="btn btn-secondary block6-clear-filters">${c().clear}</button>`;advanced.append(row,second,actions);container.append(toggle,advanced);
+    toggle.addEventListener('click',()=>{const open=advanced.classList.toggle('is-open');toggle.setAttribute('aria-expanded',String(open));toggle.textContent=open?c().hide:c().filters;});
+    [search,area,category,type,sort,document.getElementById('block6MinRating'),document.getElementById('block6MinPrice'),document.getElementById('block6MaxPrice'),document.getElementById('block6AvailableOnly')].forEach(el=>{if(!el)return;el.removeAttribute('oninput');el.removeAttribute('onchange');el.addEventListener(el.tagName==='INPUT'?'input':'change',()=>window.filterServices?.());if(el.type==='checkbox')el.addEventListener('change',()=>window.filterServices?.());});document.getElementById('block6ClearFilters')?.addEventListener('click',clearAdvancedFilters);
   }
-
-  function clearAdvancedFilters(){
-    const ids=['searchInput','areaFilter','categoryFilter','typeFilter','block6MinRating','block6MinPrice','block6MaxPrice','block6AvailableOnly'];
-    ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;if(el.type==='checkbox')el.checked=false;else el.value=id==='block6MinRating'?'0':'';});
-    const sort=document.getElementById('sortFilter');if(sort)sort.value='default';
-    window.filterServices?.();
-  }
-
-  window.filterServices=function(){
-    const list=Array.isArray(window.servicesData)?window.servicesData:(typeof servicesData!=='undefined'&&Array.isArray(servicesData)?servicesData:[]);
-    const query=text(document.getElementById('searchInput')?.value);
-    const cat=document.getElementById('categoryFilter')?.value||'';
-    const area=text(document.getElementById('areaFilter')?.value);
-    const type=document.getElementById('typeFilter')?.value||'';
-    const sort=document.getElementById('sortFilter')?.value||'default';
-    const minRating=money(document.getElementById('block6MinRating')?.value);
-    const minPrice=money(document.getElementById('block6MinPrice')?.value);
-    const maxPriceRaw=document.getElementById('block6MaxPrice')?.value;
-    const maxPrice=maxPriceRaw===''||maxPriceRaw==null?Infinity:money(maxPriceRaw);
-    const availableOnly=Boolean(document.getElementById('block6AvailableOnly')?.checked);
-
-    let filtered=list.filter(s=>{
-      const haystack=[s.name,s.desc,s.cat,s.category,s.providerName,s.area,s.type].map(text).join(' ');
-      const matchesQuery=!query||haystack.includes(query);
-      const matchesCat=!cat||(s.cat||s.category)===cat;
-      const matchesArea=!area||text(s.area).includes(area);
-      const matchesType=!type||s.type===type;
-      const rating=money(s.rating);
-      const price=money(s.price);
-      return matchesQuery&&matchesCat&&matchesArea&&matchesType&&rating>=minRating&&price>=minPrice&&price<=maxPrice&&(!availableOnly||s.hasAvailability!==false);
-    });
-
-    filtered=[...filtered].sort((a,b)=>{
-      if(sort==='price-asc') return money(a.price)-money(b.price);
-      if(sort==='rating') return money(b.rating)-money(a.rating)||money(b.reviewCount)-money(a.reviewCount);
-      if(sort==='price-desc') return money(b.price)-money(a.price);
-      if(sort==='reviews') return money(b.reviewCount)-money(a.reviewCount);
-      if(sort==='available') return Number(b.hasAvailability!==false)-Number(a.hasAvailability!==false);
-      return 0;
-    });
-
-    const sortEl=document.getElementById('sortFilter');
-    if(sortEl&&!sortEl.querySelector('option[value="price-desc"]')) sortEl.insertAdjacentHTML('beforeend','<option value="price-desc">Precio: Mayor a Menor</option><option value="reviews">Más reseñas</option><option value="available">Disponibilidad primero</option>');
-    if(typeof window.renderServices==='function') window.renderServices(filtered);
-    const grid=document.getElementById('servicesGrid');
-    if(grid&&filtered.length===0) grid.innerHTML='<div class="block6-no-results"><strong>No encontramos servicios con esos filtros.</strong><span>Prueba ampliar el precio, la ubicación o quitar algún filtro.</span></div>';
-    const summary=document.getElementById('block6FilterSummary');
-    if(summary) summary.textContent=`${filtered.length} servicio${filtered.length===1?'':'s'} encontrado${filtered.length===1?'':'s'}`;
-  };
-
-  function boot(){ensureAdvancedFilters();setTimeout(()=>window.filterServices?.(),0);}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+  function clearAdvancedFilters(){['searchInput','areaFilter','categoryFilter','typeFilter','block6MinRating','block6MinPrice','block6MaxPrice','block6AvailableOnly'].forEach(id=>{const el=document.getElementById(id);if(!el)return;if(el.type==='checkbox')el.checked=false;else el.value=id==='block6MinRating'?'0':'';});const sort=document.getElementById('sortFilter');if(sort)sort.value='default';window.filterServices?.();}
+  window.filterServices=function(){const list=Array.isArray(window.servicesData)?window.servicesData:(typeof servicesData!=='undefined'&&Array.isArray(servicesData)?servicesData:[]),query=text(document.getElementById('searchInput')?.value),cat=document.getElementById('categoryFilter')?.value||'',area=text(document.getElementById('areaFilter')?.value),type=document.getElementById('typeFilter')?.value||'',sort=document.getElementById('sortFilter')?.value||'default',minRating=money(document.getElementById('block6MinRating')?.value),minPrice=money(document.getElementById('block6MinPrice')?.value),maxPriceRaw=document.getElementById('block6MaxPrice')?.value,maxPrice=maxPriceRaw===''||maxPriceRaw==null?Infinity:money(maxPriceRaw),availableOnly=Boolean(document.getElementById('block6AvailableOnly')?.checked);let filtered=list.filter(s=>{const haystack=[s.name,s.desc,s.cat,s.category,s.providerName,s.area,s.type].map(text).join(' ');return(!query||haystack.includes(query))&&(!cat||(s.cat||s.category)===cat)&&(!area||text(s.area).includes(area))&&(!type||s.type===type)&&money(s.rating)>=minRating&&money(s.price)>=minPrice&&money(s.price)<=maxPrice&&(!availableOnly||s.hasAvailability!==false);});filtered=[...filtered].sort((a,b)=>sort==='price-asc'?money(a.price)-money(b.price):sort==='rating'?money(b.rating)-money(a.rating)||money(b.reviewCount)-money(a.reviewCount):sort==='price-desc'?money(b.price)-money(a.price):sort==='reviews'?money(b.reviewCount)-money(a.reviewCount):sort==='available'?Number(b.hasAvailability!==false)-Number(a.hasAvailability!==false):0);const sortEl=document.getElementById('sortFilter');if(sortEl&&!sortEl.querySelector('option[value="price-desc"]'))sortEl.insertAdjacentHTML('beforeend',`<option value="price-desc">${c().priceDesc}</option><option value="reviews">${c().reviews}</option><option value="available">${c().availableFirst}</option>`);if(typeof window.renderServices==='function')window.renderServices(filtered);const grid=document.getElementById('servicesGrid');if(grid&&filtered.length===0)grid.innerHTML=`<div class="block6-no-results"><strong>${c().none}</strong><span>${c().noneHint}</span></div>`;const summary=document.getElementById('block6FilterSummary');if(summary)summary.textContent=lang()==='zh'?`${filtered.length} ${c()[filtered.length===1?'one':'many']}`:`${filtered.length} ${c()[filtered.length===1?'one':'many']}`;};
+  function refreshLanguage(){const advanced=document.getElementById('block6AdvancedFilters');if(advanced){const parent=advanced.parentElement;document.getElementById('block6FilterToggle')?.remove();advanced.remove();ensureAdvancedFilters();}window.filterServices?.();}
+  function boot(){ensureAdvancedFilters();setTimeout(()=>window.filterServices?.(),0);document.addEventListener('change',e=>{if(e.target?.id==='zeqviroLanguageSelect')setTimeout(refreshLanguage,0);});}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
