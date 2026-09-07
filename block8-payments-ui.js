@@ -1,7 +1,8 @@
 (()=>{
   'use strict';
   const API=()=>window.location.origin;
-  const token=()=>window.session?.token||localStorage.getItem('token')||localStorage.getItem('skillhub_token')||'';
+  const readSession=()=>{try{return JSON.parse(sessionStorage.getItem('skillhubSession')||'null');}catch{return null;}};
+  const token=()=>readSession()?.token||window.session?.token||localStorage.getItem('token')||localStorage.getItem('skillhub_token')||'';
   const authHeaders=()=>({Authorization:`Bearer ${token()}`,'Content-Type':'application/json'});
   const money=n=>new Intl.NumberFormat(undefined,{style:'currency',currency:'USD'}).format(Number(n||0));
   let rows=[];
