@@ -5,6 +5,14 @@
     try{return window.ZeqviroI18nCore?.language?.()||localStorage.getItem('zeqviroLanguage')||'es';}catch{return 'es';}
   };
 
+  function goTop(){
+    requestAnimationFrame(()=>{
+      window.scrollTo(0,0);
+      document.documentElement.scrollTop=0;
+      document.body.scrollTop=0;
+    });
+  }
+
   function addCloseButton(dialog){
     if(!(dialog instanceof HTMLDialogElement)) return;
     if(dialog.querySelector('.block7-dialog-close')) return;
@@ -25,8 +33,18 @@
     dialog.prepend(button);
   }
 
+  function resetDialogScroll(dialog){
+    if(!(dialog instanceof HTMLDialogElement)||!dialog.open) return;
+    dialog.scrollTop=0;
+    const body=dialog.querySelector('.dialog-body');
+    if(body) body.scrollTop=0;
+  }
+
   function enhanceDialogs(root=document){
-    root.querySelectorAll?.('dialog').forEach(addCloseButton);
+    root.querySelectorAll?.('dialog').forEach(dialog=>{
+      addCloseButton(dialog);
+      resetDialogScroll(dialog);
+    });
   }
 
   function openSearchTab(){
@@ -35,6 +53,7 @@
     else {
       document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
       document.getElementById('tab-search')?.classList.add('active');
+      goTop();
     }
   }
 
@@ -56,25 +75,42 @@
     }
   }
 
+  function wrapNavigation(){
+    if(typeof window.switchTab!=='function'||window.switchTab.__block7ScrollWrapped) return;
+    const original=window.switchTab;
+    const wrapped=async function(...args){
+      const result=await original.apply(this,args);
+      goTop();
+      return result;
+    };
+    wrapped.__block7ScrollWrapped=true;
+    window.switchTab=wrapped;
+  }
+
   function apply(root=document){
     enhanceDialogs(root);
     moveFavoritesToProfile();
+    wrapNavigation();
   }
 
   const observer=new MutationObserver(records=>{
     for(const record of records){
-      record.addedNodes.forEach(node=>{
+      if(record.type==='attributes'&&record.target instanceof HTMLDialogElement){
+        resetDialogScroll(record.target);
+      }
+      record.addedNodes?.forEach(node=>{
         if(node.nodeType!==1) return;
         if(node.matches?.('dialog')) addCloseButton(node);
         enhanceDialogs(node);
       });
     }
     moveFavoritesToProfile();
+    wrapNavigation();
   });
 
   function boot(){
     apply();
-    observer.observe(document.documentElement,{childList:true,subtree:true});
+    observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['open']});
     document.addEventListener('zeqviro:languagechange',()=>{
       document.querySelectorAll('.block7-dialog-close').forEach(button=>{
         const label=closeLabels[language()]||closeLabels.es;
@@ -85,6 +121,6 @@
     });
   }
 
-  window.ZeqviroNavigationUX={apply,moveFavoritesToProfile};
+  window.ZeqviroNavigationUX={apply,moveFavoritesToProfile,goTop};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
