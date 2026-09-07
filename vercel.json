@@ -1,6 +1,5 @@
 {
   "routes": [
-    { "src": "^/api/(.*)$", "dest": "https://skillhub-backend-b5iy.onrender.com/api/$1" },
     { "src": "^/$", "dest": "/zeqviro.html" },
     { "src": "^/admin/?$", "dest": "/admin-wrapper.html" },
     { "src": "^/terms/?$", "dest": "/terms.html" },
