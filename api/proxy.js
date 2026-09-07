@@ -6,11 +6,13 @@ module.exports = async function handler(req, res) {
     const rawPath = String(req.query?.path || '').replace(/^\/+/, '');
     if (!rawPath) return res.status(400).json({ error: 'Ruta de API no válida.' });
 
-    // Block 8 branch previews must use the isolated sandbox backend so payment
-    // routes, Stripe test configuration and the staging database stay separate
-    // from production. Production deployments continue using the production API.
-    const isPreview = process.env.VERCEL_ENV === 'preview';
-    const BACKEND = isPreview ? BLOCK8_BACKEND : PRODUCTION_BACKEND;
+    // Keep the existing Zeqviro account/session/marketplace data on the current
+    // backend so branch previews can use the same login and bookings the user
+    // already has. Only Block 8 payment endpoints are sent to the isolated
+    // sandbox backend. This prevents preview auth from pointing at an empty
+    // staging database while keeping Stripe test routes away from production.
+    const isPaymentRoute = rawPath === 'payments' || rawPath.startsWith('payments/');
+    const BACKEND = isPaymentRoute ? BLOCK8_BACKEND : PRODUCTION_BACKEND;
 
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(req.query || {})) {
@@ -34,7 +36,7 @@ module.exports = async function handler(req, res) {
     const text = await upstream.text();
     const contentType = upstream.headers.get('content-type') || 'application/json; charset=utf-8';
     res.setHeader('content-type', contentType);
-    res.setHeader('x-zeqviro-backend', isPreview ? 'block8-staging' : 'production');
+    res.setHeader('x-zeqviro-backend', isPaymentRoute ? 'block8-staging' : 'production');
     const retryAfter = upstream.headers.get('retry-after');
     if (retryAfter) res.setHeader('retry-after', retryAfter);
     return res.status(upstream.status).send(text);
