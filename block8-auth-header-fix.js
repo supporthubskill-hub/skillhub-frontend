@@ -1,9 +1,7 @@
 (()=>{
   'use strict';
-  const readSession=()=>{
-    try{return (typeof session!=='undefined'&&session)||JSON.parse(sessionStorage.getItem('skillhubSession')||'null');}
-    catch{return null;}
-  };
+  const runtime=()=>window.ZeqviroRuntime;
+  const readSession=()=>runtime()?.getSession?.()||null;
   function syncAuthHeader(){
     const button=document.getElementById('authButton');
     if(!button)return;
@@ -24,7 +22,7 @@
   }
   const schedule=()=>{syncAuthHeader();setTimeout(syncAuthHeader,250);setTimeout(syncAuthHeader,900);};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule);else schedule();
-  window.addEventListener('storage',schedule);
+  window.addEventListener('zeqviro:session-changed',schedule);
   window.addEventListener('zeqviro:refreshed',schedule);
   document.addEventListener('click',()=>setTimeout(syncAuthHeader,50),true);
   window.ZeqviroAuthHeader={sync:syncAuthHeader};
