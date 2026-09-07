@@ -1,9 +1,16 @@
-const BACKEND = 'https://skillhub-backend-b5iy.onrender.com';
+const PRODUCTION_BACKEND = 'https://skillhub-backend-b5iy.onrender.com';
+const BLOCK8_BACKEND = 'https://zeqviro-block8-backend.onrender.com';
 
 module.exports = async function handler(req, res) {
   try {
     const rawPath = String(req.query?.path || '').replace(/^\/+/, '');
     if (!rawPath) return res.status(400).json({ error: 'Ruta de API no válida.' });
+
+    // Block 8 branch previews must use the isolated sandbox backend so payment
+    // routes, Stripe test configuration and the staging database stay separate
+    // from production. Production deployments continue using the production API.
+    const isPreview = process.env.VERCEL_ENV === 'preview';
+    const BACKEND = isPreview ? BLOCK8_BACKEND : PRODUCTION_BACKEND;
 
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(req.query || {})) {
@@ -27,11 +34,12 @@ module.exports = async function handler(req, res) {
     const text = await upstream.text();
     const contentType = upstream.headers.get('content-type') || 'application/json; charset=utf-8';
     res.setHeader('content-type', contentType);
+    res.setHeader('x-zeqviro-backend', isPreview ? 'block8-staging' : 'production');
     const retryAfter = upstream.headers.get('retry-after');
     if (retryAfter) res.setHeader('retry-after', retryAfter);
     return res.status(upstream.status).send(text);
   } catch (error) {
-    console.error('Zeqviro preview API proxy failed:', error);
+    console.error('Zeqviro API proxy failed:', error);
     return res.status(502).json({ error: 'No se pudo conectar con el servidor de Zeqviro.' });
   }
 };
