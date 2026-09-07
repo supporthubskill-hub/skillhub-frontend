@@ -7,6 +7,7 @@
   const apiBase=()=>typeof API_URL!=='undefined'?API_URL:'';
   const serviceList=()=>Array.isArray(window.servicesData)?window.servicesData:(typeof servicesData!=='undefined'&&Array.isArray(servicesData)?servicesData:[]);
   const isUser=()=>Boolean(currentSession()?.token&&currentSession()?.user?.role==='user');
+  const t=(key,fallback)=>window.ZeqviroI18nCore?.t?.(key)||fallback;
 
   function ensureFavoritesBar(){
     if(document.getElementById('block6FavoritesBar')) return;
@@ -15,7 +16,7 @@
     const bar=document.createElement('div');
     bar.id='block6FavoritesBar';
     bar.className='block6-favorites-bar';
-    bar.innerHTML='<div><strong>❤️ Mis favoritos</strong><span id="block6FavoritesHint">Guarda servicios para encontrarlos fácilmente después.</span></div><button id="block6FavoritesToggle" type="button" class="btn btn-secondary">Mis favoritos (0)</button>';
+    bar.innerHTML='<div><strong data-i18n="favorites.title"></strong><span id="block6FavoritesHint"></span></div><button id="block6FavoritesToggle" type="button" class="btn btn-secondary"></button>';
     grid.insertAdjacentElement('beforebegin',bar);
     document.getElementById('block6FavoritesToggle')?.addEventListener('click',toggleFavoritesView);
     updateBar();
@@ -25,8 +26,10 @@
     ensureFavoritesBar();
     const button=document.getElementById('block6FavoritesToggle');
     const hint=document.getElementById('block6FavoritesHint');
-    if(button) button.textContent=showingFavorites?'Todos los servicios':`Mis favoritos (${favoriteIds.size})`;
-    if(hint) hint.textContent=isUser()?'Guarda servicios para encontrarlos fácilmente después.':'Inicia sesión para guardar favoritos.';
+    const title=document.querySelector('#block6FavoritesBar strong');
+    if(title) title.textContent=`❤️ ${t('favorites.title','Mis favoritos')}`;
+    if(button) button.textContent=showingFavorites?t('favorites.allServices','Todos los servicios'):`${t('favorites.title','Mis favoritos')} (${favoriteIds.size})`;
+    if(hint) hint.textContent=isUser()?t('favorites.savedHint','Guarda servicios para encontrarlos fácilmente después.'):t('favorites.signIn','Inicia sesión para guardar favoritos.');
   }
 
   function favoriteButton(service){
@@ -38,8 +41,8 @@
     button.type='button';
     button.className=`block6-favorite-button${active?' active':''}`;
     button.setAttribute('aria-pressed',active?'true':'false');
-    button.setAttribute('aria-label',active?'Quitar de favoritos':'Guardar en favoritos');
-    button.title=active?'Quitar de favoritos':'Guardar en favoritos';
+    button.setAttribute('aria-label',active?'Remove from favorites':'Save to favorites');
+    button.title=button.getAttribute('aria-label');
     button.textContent=active?'♥':'♡';
     button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();toggleFavorite(id,button);});
     return button;
@@ -63,7 +66,7 @@
       const list=Array.isArray(items)?items:[];
       originalRender(list);
       decorateCards(list);
-      setTimeout(()=>window.ZeqviroBlock6I18n?.apply?.(),0);
+      setTimeout(()=>window.ZeqviroI18nCore?.apply?.(),0);
     };
   }
 
@@ -95,57 +98,32 @@
     const active=favoriteIds.has(serviceId);
     button.disabled=true;
     try{
-      const response=await fetch(`${apiBase()}/api/favorites/${serviceId}`,{
-        method:active?'DELETE':'POST',
-        headers:{Authorization:`Bearer ${currentSession().token}`}
-      });
+      const response=await fetch(`${apiBase()}/api/favorites/${serviceId}`,{method:active?'DELETE':'POST',headers:{Authorization:`Bearer ${currentSession().token}`}});
       if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||'No se pudo actualizar favoritos');}
       if(active) favoriteIds.delete(serviceId); else favoriteIds.add(serviceId);
       updateBar();
       if(showingFavorites) renderFavorites(); else if(typeof window.filterServices==='function') window.filterServices();
-    }catch(error){
-      console.warn(error.message);
-    }finally{button.disabled=false;}
+    }catch(error){console.warn(error.message);}finally{button.disabled=false;}
   }
 
   function renderFavorites(){
     const list=serviceList().filter(service=>favoriteIds.has(Number(service.id)));
     if(typeof window.renderServices==='function') window.renderServices(list);
     const grid=document.getElementById('servicesGrid');
-    if(grid&&list.length===0){
-      grid.innerHTML='<div class="block6-favorites-empty"><strong>No tienes servicios favoritos disponibles.</strong><span>Guarda servicios con el corazón para volver a ellos después.</span></div>';
-      window.ZeqviroBlock6I18n?.apply?.();
-    }
+    if(grid&&list.length===0){grid.innerHTML=`<div class="block6-favorites-empty"><strong>${t('favorites.empty','No tienes servicios favoritos disponibles.')}</strong><span>${t('favorites.emptyHint','Guarda servicios con el corazón para volver a ellos después.')}</span></div>`;}
     const summary=document.getElementById('block6FilterSummary');
-    if(summary) summary.textContent=`${list.length} favorito${list.length===1?'':'s'}`;
+    if(summary) summary.textContent=String(list.length);
+    window.ZeqviroI18nCore?.apply?.();
   }
 
   function toggleFavoritesView(){
-    if(!isUser()){
-      if(typeof openAuth==='function') openAuth();
-      return;
-    }
-    showingFavorites=!showingFavorites;
-    updateBar();
-    if(showingFavorites) renderFavorites(); else if(typeof window.filterServices==='function') window.filterServices();
+    if(!isUser()){if(typeof openAuth==='function') openAuth();return;}
+    showingFavorites=!showingFavorites;updateBar();if(showingFavorites) renderFavorites(); else if(typeof window.filterServices==='function') window.filterServices();
   }
 
-  function syncSession(){
-    const token=currentSession()?.token||'';
-    if(token!==lastToken) loadFavorites();
-  }
+  function syncSession(){const token=currentSession()?.token||'';if(token!==lastToken) loadFavorites();}
+  function boot(){ensureFavoritesBar();loadFavorites();document.addEventListener('click',()=>setTimeout(syncSession,0),true);window.addEventListener('storage',syncSession);document.addEventListener('zeqviro:languagechange',()=>{updateBar();if(showingFavorites)renderFavorites();});}
 
-  function boot(){
-    ensureFavoritesBar();
-    loadFavorites();
-    document.addEventListener('click',()=>setTimeout(syncSession,0),true);
-    window.addEventListener('storage',syncSession);
-  }
-
-  window.ZeqviroFavorites={
-    has:id=>favoriteIds.has(Number(id)),
-    refresh:loadFavorites,
-    show:()=>{showingFavorites=true;updateBar();renderFavorites();}
-  };
+  window.ZeqviroFavorites={has:id=>favoriteIds.has(Number(id)),refresh:loadFavorites,show:()=>{showingFavorites=true;updateBar();renderFavorites();}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
